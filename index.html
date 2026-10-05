@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Beltran S.A. — Control de Stock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- JsBarcode para generar códigos de barras -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+  <style>
+    :root {
+      --red:       #C8102E;
+      --red-dark:  #9B0B22;
+      --blue:      #00267A;
+      --blue-dark: #001A55;
+      --blue-mid:  #1A3FA3;
+      --blue-lt:   #E6EAF7;
+      --white:     #FFFFFF;
+      --g100:      #F2F4F8;
+      --g200:      #DDE2EE;
+      --g400:      #8A96B0;
+      --g700:      #2C3451;
+      --ok:        #16A34A;
+      --err:       #DC2626;
+      --r:         10px;
+      --sh:        0 4px 24px rgba(0,38,122,.13);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Barlow', sans-serif; background: var(--g100); color: var(--g700); min-height: 100vh; }
+
+    /* ── SPLASH ── */
+    #splash {
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue) 55%, var(--blue-mid) 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px;
+      transition: opacity .6s ease, transform .6s ease;
+    }
+    #splash.hide { opacity: 0; transform: scale(1.04); pointer-events: none; }
+    #splash-logo {
+      width: 260px; border-radius: 12px;
+      border: 3px solid rgba(255,255,255,.2); object-fit: contain;
+      background: white; padding: 12px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.35);
+      animation: logoIn .7s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    @keyframes logoIn { from { transform: scale(.4) translateY(30px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+    #splash p { font-size: .9rem; color: rgba(255,255,255,.6); letter-spacing: .14em; text-transform: uppercase; animation: fadeUp .6s .45s both; }
+    #splash-bar { width: 200px; height: 5px; background: rgba(255,255,255,.18); border-radius: 4px; overflow: hidden; animation: fadeUp .6s .5s both; }
+    #splash-bar::after { content: ''; display: block; height: 100%; background: var(--red); animation: loadBar 2.2s .6s ease forwards; }
+    @keyframes loadBar { from { width: 0; } to { width: 100%; } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── APP ── */
+    #app { opacity: 0; transition: opacity .5s ease; }
+    #app.visible { opacity: 1; }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(90deg, var(--blue-dark) 0%, var(--blue) 100%);
+      color: white; padding: 10px 22px;
+      display: flex; align-items: center; gap: 14px;
+      box-shadow: 0 2px 14px rgba(0,0,0,.28);
+      position: sticky; top: 0; z-index: 100;
+      border-bottom: 3px solid var(--red);
+    }
+    header img { height: 46px; object-fit: contain; background: white; border-radius: 6px; padding: 4px 8px; }
+    .brand { flex: 1; }
+    .brand h2 { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1.25rem; letter-spacing: .08em; text-transform: uppercase; }
+    .brand span { font-size: .72rem; opacity: .6; letter-spacing: .1em; text-transform: uppercase; }
+    #clock { font-family: 'Barlow Condensed', sans-serif; font-size: 1.2rem; font-weight: 600; letter-spacing: .06em; opacity: .85; }
+
+    /* ── TABS ── */
+    .tabs-bar { background: var(--blue-dark); padding: 0 22px; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .tabs { display: flex; gap: 2px; max-width: 860px; margin: 0 auto; }
+    .tab-btn {
+      padding: 13px 26px; background: transparent; border: none; cursor: pointer;
+      color: rgba(255,255,255,.5);
+      font-family: 'Barlow Condensed', sans-serif; font-size: .98rem; font-weight: 700;
+      letter-spacing: .07em; text-transform: uppercase;
+      border-bottom: 3px solid transparent; transition: color .2s, border-color .2s;
+    }
+    .tab-btn:hover { color: rgba(255,255,255,.85); }
+    .tab-btn.active { color: white; border-bottom-color: var(--red); }
+
+    /* ── PANELS ── */
+    main { max-width: 860px; margin: 0 auto; padding: 26px 18px 60px; }
+    .panel { display: none; }
+    .panel.active { display: block; animation: panelIn .3s ease; }
+    @keyframes panelIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, var(--blue) 0%, var(--blue-mid) 100%);
+      border-radius: var(--r); padding: 20px 24px; margin-bottom: 22px;
+      display: flex; align-items: center; gap: 14px; box-shadow: var(--sh);
+      border-left: 5px solid var(--red);
+    }
+    .hero-icon { width: 50px; height: 50px; background: rgba(255,255,255,.12); border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
+    .hero h3 { font-family: 'Barlow Condensed', sans-serif; font-size: 1.5rem; font-weight: 800; color: white; letter-spacing: .06em; text-transform: uppercase; line-height: 1.1; }
+    .hero p { font-size: .82rem; color: rgba(255,255,255,.65); margin-top: 3px; }
+
+    /* ── CARD ── */
+    .card { background: white; border-radius: var(--r); padding: 26px; box-shadow: var(--sh); margin-bottom: 18px; border-top: 3px solid var(--blue); }
+
+    /* ── FORM ── */
+    .fg { margin-bottom: 18px; }
+    .fg label { display: block; font-weight: 700; font-size: .8rem; color: var(--blue-dark); margin-bottom: 6px; letter-spacing: .05em; text-transform: uppercase; }
+    .fg input, .fg select {
+      width: 100%; padding: 12px 15px;
+      border: 2px solid var(--g200); border-radius: 8px;
+      font-family: 'Barlow', sans-serif; font-size: 1rem; color: var(--g700);
+      background: var(--g100); outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .fg input:focus, .fg select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,38,122,.1); background: white; }
+    .fg input.barcode-field {
+      font-family: 'Barlow Condensed', sans-serif; font-size: 1.2rem; font-weight: 700;
+      letter-spacing: .1em; border-color: var(--blue-mid);
+      border-width: 2px;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 12px 24px; border: none; border-radius: 8px;
+      font-family: 'Barlow Condensed', sans-serif; font-size: .98rem; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
+      transition: transform .15s, filter .15s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary { background: var(--blue); color: white; box-shadow: 0 4px 14px rgba(0,38,122,.28); }
+    .btn-primary:hover:not(:disabled) { filter: brightness(1.12); }
+    .btn-red { background: var(--red); color: white; box-shadow: 0 4px 14px rgba(200,16,46,.28); }
+    .btn-red:hover:not(:disabled) { filter: brightness(1.1); }
+    .btn-full { width: 100%; justify-content: center; }
+
+    /* ── FLASH TOAST ── */
+    #flash {
+      position: fixed; top: 76px; left: 50%; transform: translateX(-50%) translateY(-18px);
+      min-width: 260px; max-width: 90vw;
+      padding: 13px 22px; border-radius: 9px;
+      font-family: 'Barlow Condensed', sans-serif; font-size: 1.08rem; font-weight: 700; letter-spacing: .05em;
+      text-align: center; opacity: 0; pointer-events: none; z-index: 5000;
+      transition: opacity .22s, transform .22s;
+      box-shadow: 0 8px 28px rgba(0,0,0,.2);
+    }
+    #flash.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #flash.ok  { background: var(--ok);  color: white; }
+    #flash.err { background: var(--err); color: white; }
+
+    /* ── SCANNER STATUS ── */
+    .scan-ready {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 16px; border-radius: 8px; margin-bottom: 18px;
+      background: var(--blue-lt); border: 2px solid var(--blue-mid);
+      font-weight: 600; font-size: .88rem; color: var(--blue-dark);
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); animation: pulse 1.6s infinite; flex-shrink: 0; }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(22,163,74,.4); } 50% { box-shadow: 0 0 0 6px rgba(22,163,74,0); } }
+
+    /* ── SCAN LOG ── */
+    #scan-log { background: var(--g100); border: 1px solid var(--g200); border-radius: 8px; padding: 12px; max-height: 210px; overflow-y: auto; }
+    .log-row { display: flex; gap: 9px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--g200); font-size: .84rem; animation: logIn .25s ease; }
+    .log-row:last-child { border-bottom: none; }
+    @keyframes logIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: translateX(0); } }
+    .badge { padding: 2px 8px; border-radius: 4px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: .76rem; flex-shrink: 0; }
+    .b-ok  { background: #DCFCE7; color: #166534; }
+    .b-err { background: #FEE2E2; color: #991B1B; }
+    .log-code { font-weight: 600; color: var(--blue-dark); }
+    .log-detail { color: var(--g400); font-size: .78rem; }
+    .log-time { margin-left: auto; color: var(--g400); font-size: .76rem; white-space: nowrap; }
+
+    /* ── BARCODE OUTPUT ── */
+    #barcode-section { display: none; }
+    #barcode-section.on { display: block; }
+    #barcode-container { display: flex; flex-wrap: wrap; gap: 10px; padding: 16px; justify-content: center; }
+    .barcode-item {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      padding: 10px 12px; border: 2px solid var(--g200); border-radius: 8px;
+      background: white; min-width: 160px;
+    }
+    .barcode-item svg { max-width: 160px; }
+    .barcode-item .bc-code { font-family: 'Barlow Condensed', sans-serif; font-size: .75rem; font-weight: 700; color: var(--blue-dark); letter-spacing: .04em; text-align: center; }
+    .barcode-item .bc-type { font-size: .7rem; color: var(--g400); text-align: center; }
+
+    /* ── CONFIG BANNER ── */
+    #config-warning {
+      background: #FEF3C7; border: 2px solid #F59E0B;
+      border-radius: var(--r); padding: 16px 20px; margin-bottom: 18px;
+      font-size: .9rem; color: #92400E; display: none;
+    }
+    #config-warning.show { display: block; }
+    #config-warning strong { display: block; margin-bottom: 4px; font-size: 1rem; }
+
+    /* ── PRINT ── */
+    @media print {
+      body * { visibility: hidden !important; }
+      #print-zone, #print-zone * { visibility: visible !important; }
+      #print-zone { position: fixed; inset: 0; display: flex; flex-wrap: wrap; gap: 4mm; padding: 4mm; align-content: flex-start; }
+      .barcode-item { border: 1px solid #ccc; padding: 3mm; page-break-inside: avoid; }
+    }
+
+    @media (max-width: 580px) {
+      header { padding: 10px 14px; }
+      header img { height: 36px; }
+      main { padding: 16px 12px 60px; }
+      .card { padding: 18px 16px; }
+      .tab-btn { padding: 11px 14px; font-size: .88rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <img id="splash-logo" src="Gemini_Generated_Image_j7tls5j7tls5j7tl.png" alt="Beltran S.A."
+       onerror="this.style.display='none'" />
+  <p>Control de Stock · Vigas</p>
+  <div id="splash-bar"></div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <img src="Gemini_Generated_Image_j7tls5j7tls5j7tl.png" alt="Logo" onerror="this.style.display='none'" />
+    <div class="brand">
+      <h2>Control de Stock</h2>
+      <span>Ingeniería en Construcciones</span>
+    </div>
+    <span id="clock">--:--:--</span>
+  </header>
+
+  <div class="tabs-bar">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="scanner">📡 Escáner</button>
+      <button class="tab-btn" data-tab="generador">⚙️ Generador de Stock</button>
+      <button class="tab-btn" data-tab="stock">📊 Stock Actual</button>
+    </div>
+  </div>
+
+  <main>
+
+    <!-- ══ PANEL ESCÁNER ══ -->
+    <div id="panel-scanner" class="panel active">
+      <div class="hero">
+        <div class="hero-icon">📦</div>
+        <div>
+          <h3>Stock Usado El Día De Hoy</h3>
+          <p>Escaneá cada viga consumida. El cursor vuelve automáticamente al campo de código.</p>
+        </div>
+      </div>
+
+      <div id="config-warning">
+        <strong>⚠️ Falta configurar la URL del script</strong>
+        Abrí el archivo <code>config.js</code> y pegá tu URL de Google Apps Script.
+      </div>
+
+      <div class="card">
+        <div class="scan-ready">
+          <div class="dot"></div>
+          Lector listo — apunte y dispare
+        </div>
+
+        <div class="fg">
+          <label for="obra">🏗️ Número de Obra <span style="font-weight:400;opacity:.6;font-size:.85em;">(opcional)</span></label>
+          <input type="text" id="obra" placeholder="Ej: OBR-2024-045 — opcional" autocomplete="off" />
+        </div>
+
+        <div class="fg">
+          <label for="qr">🔫 Código de Barras (Pistola Lectora)</label>
+          <input type="text" id="qr" class="barcode-field"
+                 placeholder="Esperando lectura..."
+                 autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        </div>
+      </div>
+
+      <div class="card">
+        <p style="font-weight:700;font-size:.8rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;margin-bottom:11px;">
+          📋 Últimos Registros de Esta Sesión
+        </p>
+        <div id="scan-log">
+          <div style="color:var(--g400);font-size:.84rem;text-align:center;padding:14px;">Sin registros aún</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PANEL GENERADOR ══ -->
+    <div id="panel-generador" class="panel">
+      <div class="hero">
+        <div class="hero-icon">⚙️</div>
+        <div>
+          <h3>Generador de Stock</h3>
+          <p>Ingresá vigas nuevas y generá sus etiquetas con código de barras para imprimir.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="fg">
+          <label for="tipo-viga">📐 Tipo / Medida de Viga</label>
+          <select id="tipo-viga">
+            <option value="">— Seleccioná una medida —</option>
+            <optgroup label="W 150">
+              <option>W 150 x 13,0 148 100 4.3 4.9</option>
+              <option>W 150 x 18,0 153 102 5.8 7.1</option>
+              <option>W 150 x 22,5 152 152 5.8 6.6</option>
+              <option>W 150 x 29,8 157 153 6.6 9.3</option>
+            </optgroup>
+            <optgroup label="W 200">
+              <option>W 200 x 15,0 200 100 4.3 5.2</option>
+              <option>W 200 x 19,3 203 102 5.8 6.5</option>
+              <option>W 200 x 22,5 206 102 6.2 8.0</option>
+              <option>W 200 x 26,6 207 133 5.8 8.4</option>
+              <option>W 200 x 31,3 210 134 6.4 10.4</option>
+              <option>W 200 x 35,9 201 165 6.2 10.2</option>
+              <option>W 200 x 46,1 203 203 7.2 11.0</option>
+              <option>W 200 x 59,0 210 205 9.1 14.2</option>
+              <option>W 200 x 71 216 206 10.2 17.4</option>
+              <option>HP 200 x 86 222 209 13 20.6</option>
+            </optgroup>
+            <optgroup label="W 250">
+              <option>W 250 x 17,9 251 101 4.8 5.3</option>
+              <option>W 250 x 22,3 254 102 5.8 6.9</option>
+              <option>W 250 x 25,3 257 102 6.1 8.4</option>
+              <option>W 250 x 28,4 260 102 6.4 10.0</option>
+              <option>W 250 x 32,7 258 146 6.1 9.1</option>
+              <option>W 250 x 38,5 262 147 6.8 11.2</option>
+              <option>HP 250 x 62,0 246 256 10.5 10.7</option>
+              <option>HP 250 x 73,0 253 254 8.6 14.2</option>
+              <option>W 250 x 89,0 260 256 10.7 17.3</option>
+            </optgroup>
+            <optgroup label="W 310">
+              <option>W 310 x 21,0 303 101 5.1 5.7</option>
+              <option>W 310 x 23,8 305 101 5.6 6.7</option>
+              <option>W 310 x 28,3 309 102 6.0 8.9</option>
+              <option>W 310 x 32,7 313 102 6.6 10.8</option>
+              <option>W 310 x 38,7 310 165 5.8 9.7</option>
+              <option>W 310 x 44,5 313 166 6.6 11.2</option>
+              <option>W 310 x 52,0 317 167 7.6 13.2</option>
+              <option>HP 310 x 79,0 299 306 11.0 11.0</option>
+              <option>W 310 x 97,0 308 305 9.9 15.4</option>
+              <option>W 310 x 129,0 318 308 13.1 20.6</option>
+              <option>W 310 x 143,0 323 309 14.0 22.9</option>
+              <option>W 310 x 179,0 333 313 18.0 28.1</option>
+            </optgroup>
+            <optgroup label="W 360">
+              <option>W 360 x 32,9 349 127 5.8 8.5</option>
+              <option>W 360 x 39,0 353 128 6.5 10.7</option>
+              <option>W 360 x 44,6 352 171 6.9 9.8</option>
+              <option>W 360 x 51,0 355 171 7.2 11.6</option>
+              <option>W 360 x 64,0 347 203 7.7 13.5</option>
+              <option>W 360 x 101,0 357 255 10.5 18.3</option>
+              <option>W 360 x 110,0 360 256 11.4 19.9</option>
+              <option>W 360 x 134</option>
+              <option>W 360 x 196</option>
+            </optgroup>
+            <optgroup label="W 410">
+              <option>W 410 x 38,8 399 140 6.4 8.8</option>
+              <option>W 410 x 46,1 403 140 7.0 11.2</option>
+              <option>W 410 x 53,0 403 177 7.5 10.9</option>
+              <option>W 410 x 60,0 407 178 7.7 12.8</option>
+              <option>W 410 x 67,0 410 179 8.8 14.4</option>
+              <option>W 410 x 75,0 413 180 9.7 16.0</option>
+              <option>W 410 x 85,0 417 181 10.9 18.2</option>
+              <option>W 410 x 100</option>
+            </optgroup>
+            <optgroup label="W 460">
+              <option>W 460 x 52,0 450 152 7.6 10.8</option>
+              <option>W 460 x 60,0 455 153 8.0 13.3</option>
+              <option>W 460 x 74,0 457 190 9.0 14.5</option>
+              <option>W 460 x 106,0 469 194 12.6 20.6</option>
+            </optgroup>
+            <optgroup label="W 530">
+              <option>W 530 x 66,0 525 165 8.9 11.4</option>
+              <option>W 530 x 72,0 524 207 9.0 10.9</option>
+              <option>W 530 x 74,0 529 186 9.7 13.6</option>
+              <option>W 530 x 82,0 528 208 9.5 13.3</option>
+              <option>W 530 x 85,0 535 186 10.3 16.5</option>
+              <option>W 530 x 92,0 533 209 10.2 15.6</option>
+              <option>W 530 x 101,0 537 210 10.9 17.4</option>
+              <option>W 530 x 109,0 539 211 11.6 18.8</option>
+              <option>W 530 x 138,0 549 214 14.7 23.6</option>
+            </optgroup>
+            <optgroup label="W 610">
+              <option>W 610 x 82,0 599 178 10.0 12.8</option>
+              <option>W 610 x 101,0 603 228 10.5 14.9</option>
+              <option>W 610 x 113,0 608 228 11.2 17.3</option>
+              <option>W 610 x 125,0 612 229 11.9 19.6</option>
+              <option>W 610 x 140,0 617 230 13.1 22.2</option>
+              <option>W 610 x 153,0 623 229 14.0 24.9</option>
+              <option>W 610 x 155,0 611 324 12.7 19.0</option>
+              <option>W 610 x 174,0 616 325 14.0 21.6</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="fg">
+          <label for="cantidad">🔢 Cantidad a Ingresar</label>
+          <input type="number" id="cantidad" min="1" max="500" placeholder="Ej: 10" />
+        </div>
+
+        <button class="btn btn-primary btn-full" id="btn-generar">
+          ⚡ Generar e Ingresar al Stock
+        </button>
+      </div>
+
+      <div id="barcode-section">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <p style="font-weight:700;font-size:.8rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;">
+              🏷️ Etiquetas Generadas
+            </p>
+            <button class="btn btn-red" onclick="window.print()">🖨️ Imprimir Etiquetas</button>
+          </div>
+          <div id="print-zone">
+            <div id="barcode-container"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ══ PANEL STOCK ACTUAL ══ -->
+    <div id="panel-stock" class="panel">
+      <div class="hero">
+        <div class="hero-icon">📊</div>
+        <div>
+          <h3>Stock Actual</h3>
+          <p>Cantidad de perfiles disponibles en este momento. Se actualiza en tiempo real.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+          <p style="font-weight:700;font-size:.82rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;">
+            Perfiles Disponibles
+          </p>
+          <button class="btn btn-primary" id="btn-refrescar" onclick="cargarStock()">🔄 Actualizar</button>
+        </div>
+
+        <!-- Búsqueda rápida -->
+        <div class="fg" style="margin-bottom:14px;">
+          <input type="text" id="stock-buscar" placeholder="🔍 Filtrar por perfil... (ej: W 310, HP 250)" 
+                 oninput="filtrarStock()" autocomplete="off" />
+        </div>
+
+        <div id="stock-loading" style="text-align:center;padding:30px;color:var(--g400);display:none;">
+          ⏳ Cargando stock...
+        </div>
+        <div id="stock-tabla-wrap">
+          <table id="stock-tabla" style="width:100%;border-collapse:collapse;font-size:.88rem;display:none;">
+            <thead>
+              <tr style="background:var(--blue-dark);color:white;">
+                <th style="padding:10px 12px;text-align:left;font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em;font-size:.9rem;">PERFIL</th>
+                <th style="padding:10px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em;font-size:.9rem;">DISPONIBLES</th>
+                <th style="padding:10px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em;font-size:.9rem;">CONSUMIDOS</th>
+                <th style="padding:10px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em;font-size:.9rem;">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody id="stock-tbody"></tbody>
+          </table>
+        </div>
+        <div id="stock-empty" style="text-align:center;padding:30px;color:var(--g400);display:none;">
+          No hay datos de stock todavía. Generá perfiles primero.
+        </div>
+        <div id="stock-error" style="display:none;background:#FEE2E2;border:1px solid #FCA5A5;border-radius:8px;padding:14px;color:#991B1B;font-size:.88rem;margin-top:10px;"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FLASH -->
+<div id="flash"></div>
+
+<!-- CONFIG -->
+<script src="config.js"></script>
+
+<script>
+/* ═══════════════════════ SPLASH ═══════════════════════ */
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('hide');
+    document.getElementById('app').classList.add('visible');
+    setTimeout(focusQR, 700);
+    checkConfig();
+  }, 2700);
+});
+
+/* ═══════════════════════ CLOCK ═══════════════════════ */
+const clockEl = document.getElementById('clock');
+setInterval(() => {
+  clockEl.textContent = new Date().toLocaleTimeString('es-AR');
+}, 1000);
+
+/* ═══════════════════════ CONFIG CHECK ═══════════════════════ */
+function checkConfig() {
+  if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'PEGAR_URL_AQUI') {
+    document.getElementById('config-warning').classList.add('show');
+  }
+}
+
+/* ═══════════════════════ TABS ═══════════════════════ */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'scanner') setTimeout(focusQR, 80);
+  });
+});
+
+/* ═══════════════════════ TOAST ═══════════════════════ */
+let _ft;
+function flash(msg, type = 'ok') {
+  const f = document.getElementById('flash');
+  clearTimeout(_ft);
+  f.textContent = msg;
+  f.className = `show ${type}`;
+  _ft = setTimeout(() => f.className = '', 3400);
+}
+
+/* ═══════════════════════ FOCO CAMPO ═══════════════════════ */
+function focusQR() {
+  const el = document.getElementById('qr');
+  if (el) { el.focus(); el.select(); }
+}
+document.getElementById('panel-scanner').addEventListener('click', e => {
+  if (e.target.id !== 'obra') focusQR();
+});
+
+/* ═══════════════════════ LOG ═══════════════════════ */
+const logs = [];
+function addLog(code, obra, ok, msg) {
+  logs.unshift({ code, obra, ok, msg, t: new Date().toLocaleTimeString('es-AR') });
+  document.getElementById('scan-log').innerHTML = logs.slice(0, 40).map(l => `
+    <div class="log-row">
+      <span class="badge ${l.ok ? 'b-ok' : 'b-err'}">${l.ok ? '✓ OK' : '✗ ERR'}</span>
+      <span class="log-code">${l.code}</span>
+      <span class="log-detail">Obra: ${l.obra || '—'}</span>
+      <span class="log-time">${l.t}</span>
+    </div>`).join('');
+}
+
+/* ═══════════════════════ ESCÁNER — PISTOLA ═══════════════════════ */
+document.getElementById('qr').addEventListener('keypress', async e => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+
+  const qrVal  = document.getElementById('qr').value.trim();
+  const obraEl = document.getElementById('obra');
+  const obra   = obraEl.value.trim();
+
+  if (!qrVal) { flash('⚠️ El campo de código está vacío', 'err'); focusQR(); return; }
+  if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'PEGAR_URL_AQUI') {
+    flash('⚠️ Configurá la URL del script primero', 'err'); return;
+  }
+
+  document.getElementById('qr').value = '';
+  document.getElementById('qr').disabled = true;
+
+  try {
+    const res  = await fetch(window.APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ accion: 'consumir', qr_code: qrVal, numero_obra: obra || 'Sin asignar' })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      flash(`✅ Viga registrada: ${qrVal}`, 'ok');
+      addLog(qrVal, obra, true, data.message);
+      document.body.style.background = '#dcfce7';
+      setTimeout(() => document.body.style.background = '', 380);
+    } else {
+      flash(`❌ ${data.message}`, 'err');
+      addLog(qrVal, obra, false, data.message);
+    }
+  } catch {
+    flash('🔌 Error de conexión', 'err');
+    addLog(qrVal, obra, false, 'Error de red');
+  } finally {
+    document.getElementById('qr').disabled = false;
+    focusQR();
+  }
+});
+
+/* ═══════════════════════ GENERADOR ═══════════════════════ */
+document.getElementById('btn-generar').addEventListener('click', async () => {
+  const tipo     = document.getElementById('tipo-viga').value;
+  const cantidad = parseInt(document.getElementById('cantidad').value);
+  const btn      = document.getElementById('btn-generar');
+
+  if (!tipo)                     { flash('⚠️ Seleccioná el tipo de viga', 'err'); return; }
+  if (!cantidad || cantidad < 1) { flash('⚠️ Ingresá una cantidad válida', 'err'); return; }
+  if (cantidad > 500)            { flash('⚠️ Máximo 500 por lote', 'err'); return; }
+  if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'PEGAR_URL_AQUI') {
+    flash('⚠️ Configurá la URL del script primero', 'err'); return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Generando...';
+
+  try {
+    const res  = await fetch(window.APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ accion: 'generar', tipo_viga: tipo, cantidad })
+    });
+    const data = await res.json();
+
+    if (data.success && data.codes) {
+      flash(`✅ ${data.codes.length} viga(s) ingresadas al stock`, 'ok');
+      renderBarcodes(data.codes, tipo);
+    } else {
+      flash(`❌ ${data.message || 'Error al generar'}`, 'err');
+    }
+  } catch {
+    flash('🔌 Error de conexión', 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⚡ Generar e Ingresar al Stock';
+  }
+});
+
+/* ═══════════════════════ RENDER CÓDIGOS DE BARRA ═══════════════════════ */
+function renderBarcodes(codes, tipo) {
+  const container = document.getElementById('barcode-container');
+  container.innerHTML = '';
+
+  codes.forEach(code => {
+    const item = document.createElement('div');
+    item.className = 'barcode-item';
+
+    // SVG para el código de barras
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    item.appendChild(svg);
+
+    // Texto del código y tipo
+    const lblCode = document.createElement('span');
+    lblCode.className = 'bc-code';
+    lblCode.textContent = code;
+
+    const lblTipo = document.createElement('span');
+    lblTipo.className = 'bc-type';
+    lblTipo.textContent = tipo;
+
+    item.append(lblCode, lblTipo);
+    container.appendChild(item);
+
+    // Generar el código de barras Code128 en el SVG
+    JsBarcode(svg, code, {
+      format: 'CODE128',
+      width: 2,
+      height: 60,
+      displayValue: false,
+      margin: 6,
+      lineColor: '#001A55',
+      background: '#ffffff'
+    });
+  });
+
+  document.getElementById('barcode-section').classList.add('on');
+  document.getElementById('barcode-section').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+
+/* ══ STOCK ACTUAL ══ */
+let stockData = [];
+
+async function cargarStock() {
+  if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'PEGAR_URL_AQUI') return;
+
+  document.getElementById('stock-loading').style.display = 'block';
+  document.getElementById('stock-tabla').style.display   = 'none';
+  document.getElementById('stock-empty').style.display   = 'none';
+  document.getElementById('stock-error').style.display   = 'none';
+  const btn = document.getElementById('btn-refrescar');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Cargando...'; }
+
+  try {
+    const res  = await fetch(window.APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ accion: 'stock_resumen' })
+    });
+    const data = await res.json();
+
+    if (data.success && data.resumen) {
+      stockData = data.resumen;
+      renderStock(stockData);
+    } else {
+      mostrarErrorStock(data.message || 'Error al cargar el stock.');
+    }
+  } catch (e) {
+    mostrarErrorStock('Error de conexión con el servidor.');
+  } finally {
+    document.getElementById('stock-loading').style.display = 'none';
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 Actualizar'; }
+  }
+}
+
+function renderStock(data) {
+  const tbody = document.getElementById('stock-tbody');
+  if (!data || data.length === 0) {
+    document.getElementById('stock-empty').style.display = 'block';
+    return;
+  }
+
+  tbody.innerHTML = data.map((row, i) => {
+    const disp  = parseInt(row.disponibles) || 0;
+    const cons  = parseInt(row.consumidos)  || 0;
+    const total = parseInt(row.total)       || 0;
+    const pct   = total > 0 ? Math.round((disp / total) * 100) : 0;
+    const color = disp === 0 ? '#FEE2E2' : disp <= 2 ? '#FEF3C7' : '#F0FDF4';
+    const textColor = disp === 0 ? '#991B1B' : disp <= 2 ? '#92400E' : '#166534';
+
+    return `<tr style="background:${i % 2 === 0 ? 'white' : 'var(--g100)'};">
+      <td style="padding:9px 12px;border-bottom:1px solid var(--g200);font-weight:600;color:var(--blue-dark);">${row.tipo}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--g200);text-align:center;">
+        <span style="background:${color};color:${textColor};padding:3px 10px;border-radius:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:1rem;">
+          ${disp}
+        </span>
+      </td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--g200);text-align:center;color:var(--g400);">${cons}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--g200);text-align:center;color:var(--g400);">${total}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('stock-tabla').style.display = 'table';
+}
+
+function filtrarStock() {
+  const q = document.getElementById('stock-buscar').value.toLowerCase().trim();
+  if (!q) { renderStock(stockData); return; }
+  const filtrado = stockData.filter(r => r.tipo.toLowerCase().includes(q));
+  renderStock(filtrado);
+}
+
+function mostrarErrorStock(msg) {
+  const el = document.getElementById('stock-error');
+  el.textContent = '❌ ' + msg;
+  el.style.display = 'block';
+}
+
+// Cargar stock automáticamente al cambiar a esa pestaña
+const _tabOriginal = document.querySelectorAll.bind(document);
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.tab === 'stock') cargarStock();
+  });
+});
+
+</body>
+</html>
