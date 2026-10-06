@@ -236,7 +236,8 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="scanner">📡 Escáner</button>
       <button class="tab-btn" data-tab="generador">⚙️ Generador de Stock</button>
-      <button class="tab-btn" data-tab="stock">📊 Stock Actual</button>
+      <button class="tab-btn" data-tab="stock">📊 Stock Sidersa</button>
+      <button class="tab-btn" data-tab="bobinas">🔄 Stock Bobinas</button>
     </div>
   </div>
 
@@ -465,6 +466,126 @@
           No hay datos de stock todavía. Generá perfiles primero.
         </div>
         <div id="stock-error" style="display:none;background:#FEE2E2;border:1px solid #FCA5A5;border-radius:8px;padding:14px;color:#991B1B;font-size:.88rem;margin-top:10px;"></div>
+      </div>
+    </div>
+
+
+    <!-- ══ PANEL BOBINAS ══ -->
+    <div id="panel-bobinas" class="panel">
+      <div class="hero">
+        <div class="hero-icon">🔄</div>
+        <div>
+          <h3>Stock Bobinas</h3>
+          <p>Generá etiquetas, registrá inicio y fin de procesamiento con la pistola láser.</p>
+        </div>
+      </div>
+
+      <!-- SUB-TABS -->
+      <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--g200);border-radius:8px;padding:4px;">
+        <button id="bob-tab-scanner" onclick="bobTab('scanner')"
+          style="flex:1;padding:10px;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:var(--blue);color:white;transition:.2s;">
+          🔫 Escáner
+        </button>
+        <button id="bob-tab-generador" onclick="bobTab('generador')"
+          style="flex:1;padding:10px;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:transparent;color:var(--g700);transition:.2s;">
+          ⚙️ Generador
+        </button>
+        <button id="bob-tab-resumen" onclick="bobTab('resumen')"
+          style="flex:1;padding:10px;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:transparent;color:var(--g700);transition:.2s;">
+          📊 Resumen
+        </button>
+      </div>
+
+      <!-- ESCÁNER BOBINAS -->
+      <div id="bob-panel-scanner">
+        <div class="card">
+          <div class="scan-ready">
+            <div class="dot"></div>
+            1er escaneo = Inicio proceso · 2do escaneo = Fin proceso
+          </div>
+          <div class="fg">
+            <label for="bob-qr">🔦 Código de Barras (Pistola Láser)</label>
+            <input type="text" id="bob-qr" class="bar-field"
+                   placeholder="Esperando lectura..."
+                   autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </div>
+        </div>
+        <div class="card">
+          <p style="font-weight:700;font-size:.8rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">
+            📋 Últimos Registros
+          </p>
+          <div id="bob-log">
+            <div style="color:var(--g400);font-size:.83rem;text-align:center;padding:14px;">Sin registros aún</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GENERADOR BOBINAS -->
+      <div id="bob-panel-generador" style="display:none;">
+        <div class="card">
+          <div class="fg">
+            <label for="bob-medida">📐 Medida de Bobina</label>
+            <select id="bob-medida">
+              <option value="">— Seleccioná una medida —</option>
+              <option value="A - 240mm x 2mm">A — Ancho 240mm · Espesor 2mm</option>
+              <option value="B - 280mm x 2mm">B — Ancho 280mm · Espesor 2mm</option>
+              <option value="C - 300mm x 2mm">C — Ancho 300mm · Espesor 2mm</option>
+              <option value="D - 340mm x 2mm">D — Ancho 340mm · Espesor 2mm</option>
+              <option value="E - 340mm x 2.5mm">E — Ancho 340mm · Espesor 2,5mm</option>
+              <option value="F - 360mm x 2mm">F — Ancho 360mm · Espesor 2mm</option>
+              <option value="G - 380mm x 2mm">G — Ancho 380mm · Espesor 2mm</option>
+              <option value="H - 400mm x 2.5mm">H — Ancho 400mm · Espesor 2,5mm</option>
+              <option value="I - 420mm x 2.5mm">I — Ancho 420mm · Espesor 2,5mm</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label for="bob-peso">⚖️ Peso de la Bobina (kg)</label>
+            <input type="number" id="bob-peso" min="1" max="99999" step="0.1" placeholder="Ej: 4250" />
+          </div>
+          <button class="btn btn-primary btn-full" id="btn-bob-generar">
+            ⚡ Generar Etiqueta
+          </button>
+        </div>
+
+        <div id="bob-bar-section" style="display:none;">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+              <p style="font-weight:700;font-size:.8rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;">
+                🏷️ Etiqueta Generada
+              </p>
+              <button class="btn btn-red" onclick="window.print()">🖨️ Imprimir Etiqueta</button>
+            </div>
+            <div id="bob-print-zone">
+              <div id="bob-bar-container" style="display:flex;flex-wrap:wrap;gap:12px;padding:16px;justify-content:center;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESUMEN BOBINAS -->
+      <div id="bob-panel-resumen" style="display:none;">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <p style="font-weight:700;font-size:.82rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;">
+              Estado de Bobinas
+            </p>
+            <button class="btn btn-primary" onclick="cargarResumenBobinas()">🔄 Actualizar</button>
+          </div>
+          <div id="bob-resumen-loading" style="text-align:center;padding:30px;color:var(--g400);display:none;">⏳ Cargando...</div>
+          <table id="bob-resumen-tabla" style="width:100%;border-collapse:collapse;font-size:.88rem;display:none;">
+            <thead>
+              <tr style="background:var(--blue-dark);color:white;">
+                <th style="padding:10px 12px;text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;">CÓDIGO</th>
+                <th style="padding:10px 12px;text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;">MEDIDA</th>
+                <th style="padding:10px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;">PESO (kg)</th>
+                <th style="padding:10px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;">ESTADO</th>
+              </tr>
+            </thead>
+            <tbody id="bob-resumen-tbody"></tbody>
+          </table>
+          <div id="bob-resumen-empty" style="text-align:center;padding:30px;color:var(--g400);display:none;">No hay bobinas registradas todavía.</div>
+          <div id="bob-resumen-error" style="display:none;background:#FEE2E2;border:1px solid #FCA5A5;border-radius:8px;padding:14px;color:#991B1B;font-size:.88rem;margin-top:10px;"></div>
+        </div>
       </div>
     </div>
 
@@ -750,6 +871,220 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'stock') cargarStock();
   });
 });
+</script>
+
+
+<script>
+/* ══ BOBINAS ══ */
+
+// Sub-tabs de bobinas
+function bobTab(tab) {
+  ['scanner','generador','resumen'].forEach(t => {
+    document.getElementById('bob-panel-' + t).style.display = t === tab ? 'block' : 'none';
+    const btn = document.getElementById('bob-tab-' + t);
+    if (t === tab) {
+      btn.style.background = 'var(--blue)';
+      btn.style.color = 'white';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--g700)';
+    }
+  });
+  if (tab === 'scanner') setTimeout(focusBobQR, 80);
+  if (tab === 'resumen') cargarResumenBobinas();
+}
+
+function focusBobQR() {
+  const el = document.getElementById('bob-qr');
+  if (el && !el.disabled) { el.focus(); el.select(); }
+}
+
+// Activar focus cuando se entra a la pestaña bobinas
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.tab === 'bobinas') setTimeout(() => focusBobQR(), 80);
+  });
+});
+
+/* ── LOG BOBINAS ── */
+const bobLogs = [];
+function addBobLog(code, estado, ok, msg) {
+  bobLogs.unshift({ code, estado, ok, msg, t: new Date().toLocaleTimeString('es-AR') });
+  document.getElementById('bob-log').innerHTML = bobLogs.slice(0, 40).map(l => `
+    <div class="log-row">
+      <span class="badge ${l.ok ? 'b-ok' : 'b-err'}">${l.ok ? '✓ OK' : '✗ ERR'}</span>
+      <span class="log-code">${l.code}</span>
+      <span class="log-detail">${l.estado}</span>
+      <span class="log-time">${l.t}</span>
+    </div>`).join('');
+}
+
+/* ── ESCÁNER BOBINAS ── */
+document.getElementById('bob-qr').addEventListener('keypress', async e => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+
+  const input = document.getElementById('bob-qr');
+  const code  = input.value.trim();
+  if (!code) { flash('⚠️ El campo está vacío', 'err'); focusBobQR(); return; }
+  if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'PEGAR_URL_AQUI') {
+    flash('⚠️ Configurá la URL del script', 'err'); return;
+  }
+
+  input.value    = '';
+  input.disabled = true;
+
+  try {
+    const res  = await fetch(window.APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ accion: 'escanear_bobina', codigo: code })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      const emoji = data.nuevo_estado === 'En proceso' ? '▶️' : '✅';
+      flash(`${emoji} Bobina ${data.nuevo_estado}: ${code}`, 'ok');
+      addBobLog(code, data.nuevo_estado, true, data.message);
+      document.body.style.background = data.nuevo_estado === 'En proceso' ? '#FEF3C7' : '#dcfce7';
+      setTimeout(() => document.body.style.background = '', 400);
+    } else {
+      flash(`❌ ${data.message}`, 'err');
+      addBobLog(code, '—', false, data.message);
+    }
+  } catch {
+    flash('🔌 Error de conexión', 'err');
+    addBobLog(code, '—', false, 'Error de red');
+  } finally {
+    input.disabled = false;
+    focusBobQR();
+  }
+});
+
+/* ── GENERADOR BOBINAS ── */
+document.getElementById('btn-bob-generar').addEventListener('click', async () => {
+  const medida = document.getElementById('bob-medida').value;
+  const peso   = parseFloat(document.getElementById('bob-peso').value);
+  const btn    = document.getElementById('btn-bob-generar');
+
+  if (!medida)           { flash('⚠️ Seleccioná la medida de la bobina', 'err'); return; }
+  if (!peso || peso <= 0){ flash('⚠️ Ingresá el peso de la bobina', 'err'); return; }
+  if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'PEGAR_URL_AQUI') {
+    flash('⚠️ Configurá la URL del script', 'err'); return;
+  }
+
+  btn.disabled    = true;
+  btn.textContent = '⏳ Generando...';
+
+  try {
+    const res  = await fetch(window.APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ accion: 'generar_bobina', medida, peso })
+    });
+    const data = await res.json();
+
+    if (data.success && data.codigo) {
+      flash(`✅ Bobina ingresada: ${data.codigo}`, 'ok');
+      renderBobBar(data.codigo, medida, peso);
+    } else {
+      flash(`❌ ${data.message || 'Error al generar'}`, 'err');
+    }
+  } catch {
+    flash('🔌 Error de conexión', 'err');
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = '⚡ Generar Etiqueta';
+  }
+});
+
+function renderBobBar(codigo, medida, peso) {
+  const container = document.getElementById('bob-bar-container');
+  container.innerHTML = '';
+
+  const item = document.createElement('div');
+  item.className = 'barcode-item';
+
+  const titulo = document.createElement('div');
+  titulo.className = 'bc-type';
+  titulo.textContent = 'BOBINA · BELTRAN S.A.';
+  titulo.style.fontWeight = '700';
+  titulo.style.color = 'var(--blue-dark)';
+
+  const svgEl = document.createElement('svg');
+  svgEl.id = 'bob-barcode-0';
+
+  const medidaLabel = document.createElement('div');
+  medidaLabel.className = 'bc-type';
+  medidaLabel.textContent = medida;
+
+  const pesoLabel = document.createElement('div');
+  pesoLabel.className = 'bc-code';
+  pesoLabel.textContent = `Peso: ${peso} kg`;
+
+  item.append(titulo, svgEl, medidaLabel, pesoLabel);
+  container.appendChild(item);
+
+  JsBarcode('#bob-barcode-0', codigo, {
+    format: 'CODE128', width: 2.4, height: 55,
+    displayValue: true, fontSize: 11, textMargin: 3,
+    margin: 4, lineColor: '#000000', background: '#ffffff'
+  });
+
+  document.getElementById('bob-bar-section').style.display = 'block';
+  document.getElementById('bob-bar-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+/* ── RESUMEN BOBINAS ── */
+async function cargarResumenBobinas() {
+  if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'PEGAR_URL_AQUI') return;
+
+  document.getElementById('bob-resumen-loading').style.display = 'block';
+  document.getElementById('bob-resumen-tabla').style.display   = 'none';
+  document.getElementById('bob-resumen-empty').style.display   = 'none';
+  document.getElementById('bob-resumen-error').style.display   = 'none';
+
+  try {
+    const res  = await fetch(window.APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ accion: 'resumen_bobinas' })
+    });
+    const data = await res.json();
+
+    if (data.success && data.bobinas) {
+      const tbody = document.getElementById('bob-resumen-tbody');
+      if (!data.bobinas.length) {
+        document.getElementById('bob-resumen-empty').style.display = 'block';
+        return;
+      }
+      tbody.innerHTML = data.bobinas.map((b, i) => {
+        const estadoColor = b.estado === 'Disponible' ? '#F0FDF4' :
+                            b.estado === 'En proceso'  ? '#FEF3C7' : '#F4F6FB';
+        const estadoText  = b.estado === 'Disponible' ? '#166534' :
+                            b.estado === 'En proceso'  ? '#92400E' : '#374151';
+        const estadoEmoji = b.estado === 'Disponible' ? '🟢' :
+                            b.estado === 'En proceso'  ? '🟡' : '✅';
+        return `<tr style="background:${i%2===0?'white':'var(--g100)'}">
+          <td style="padding:9px 12px;border-bottom:1px solid var(--g200);font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--blue-dark);font-size:.95rem;">${b.codigo}</td>
+          <td style="padding:9px 12px;border-bottom:1px solid var(--g200);font-size:.85rem;">${b.medida}</td>
+          <td style="padding:9px 12px;border-bottom:1px solid var(--g200);text-align:center;font-weight:600;">${b.peso} kg</td>
+          <td style="padding:9px 12px;border-bottom:1px solid var(--g200);text-align:center;">
+            <span style="background:${estadoColor};color:${estadoText};padding:3px 10px;border-radius:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;">
+              ${estadoEmoji} ${b.estado}
+            </span>
+          </td>
+        </tr>`;
+      }).join('');
+      document.getElementById('bob-resumen-tabla').style.display = 'table';
+    } else {
+      document.getElementById('bob-resumen-error').textContent = '❌ ' + (data.message || 'Error al cargar.');
+      document.getElementById('bob-resumen-error').style.display = 'block';
+    }
+  } catch {
+    document.getElementById('bob-resumen-error').textContent = '❌ Error de conexión.';
+    document.getElementById('bob-resumen-error').style.display = 'block';
+  } finally {
+    document.getElementById('bob-resumen-loading').style.display = 'none';
+  }
+}
 </script>
 
 </body>
