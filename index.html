@@ -194,12 +194,29 @@
     #config-warning.show { display: block; }
     #config-warning strong { display: block; margin-bottom: 4px; font-size: 1rem; }
 
-    /* ── PRINT ── */
+    /* ── PRINT — Etiqueta térmica 50mm × 45mm ── */
+    @page { size: 80mm 45mm; margin: 0; }
     @media print {
+      html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
       body * { visibility: hidden !important; }
+      /* Perfiles */
       #print-zone, #print-zone * { visibility: visible !important; }
-      #print-zone { position: fixed; inset: 0; display: flex; flex-wrap: wrap; gap: 4mm; padding: 4mm; align-content: flex-start; }
-      .barcode-item { border: 1px solid #ccc; padding: 3mm; page-break-inside: avoid; }
+      #print-zone { position: static !important; display: block !important; margin: 0 !important; padding: 0 !important; }
+      /* Bobinas */
+      #bob-print-zone, #bob-print-zone * { visibility: visible !important; }
+      #bob-print-zone { position: static !important; display: block !important; margin: 0 !important; padding: 0 !important; }
+      /* Etiqueta individual */
+      .barcode-item {
+        width: 80mm !important; height: 45mm !important;
+        box-sizing: border-box !important; padding: 2mm !important; margin: 0 !important;
+        border: none !important; display: flex !important; flex-direction: column !important;
+        align-items: center !important; justify-content: center !important;
+        page-break-after: always !important; page-break-inside: avoid !important;
+        overflow: hidden !important; background: white !important;
+      }
+      .barcode-item svg { width: 76mm !important; height: auto !important; max-height: 30mm !important; display: block !important; }
+      .barcode-item .bc-code { font-size: 7pt !important; font-weight: 700 !important; margin-top: 1mm !important; color: black !important; }
+      .barcode-item .bc-type { font-size: 6pt !important; color: #444 !important; margin-top: .5mm !important; }
     }
 
     @media (max-width: 580px) {
@@ -234,9 +251,7 @@
 
   <div class="tabs-bar">
     <div class="tabs">
-      <button class="tab-btn active" data-tab="scanner">📡 Escáner</button>
-      <button class="tab-btn" data-tab="generador">⚙️ Generador de Stock</button>
-      <button class="tab-btn" data-tab="stock">📊 Stock Sidersa</button>
+      <button class="tab-btn active" data-tab="stock">📊 Stock Sidersa</button>
       <button class="tab-btn" data-tab="bobinas">🔄 Stock Bobinas</button>
     </div>
   </div>
@@ -244,7 +259,7 @@
   <main>
 
     <!-- ══ PANEL ESCÁNER ══ -->
-    <div id="panel-scanner" class="panel active">
+    <div id="panel-scanner" style="display:none!important;">
       <div class="hero">
         <div class="hero-icon">📦</div>
         <div>
@@ -288,7 +303,7 @@
     </div>
 
     <!-- ══ PANEL GENERADOR ══ -->
-    <div id="panel-generador" class="panel">
+    <div id="panel-generador" style="display:none!important;">
       <div class="hero">
         <div class="hero-icon">⚙️</div>
         <div>
@@ -423,49 +438,218 @@
 
 
     <!-- ══ PANEL STOCK ACTUAL ══ -->
-    <div id="panel-stock" class="panel">
+    <div id="panel-stock" class="panel active">
       <div class="hero">
         <div class="hero-icon">📊</div>
         <div>
-          <h3>Stock Actual</h3>
-          <p>Cantidad de perfiles disponibles en este momento. Se actualiza en tiempo real.</p>
+          <h3>Stock Sidersa</h3>
+          <p>Generador de etiquetas, escáner y resumen de stock de perfiles estructurales.</p>
         </div>
       </div>
 
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
-          <p style="font-weight:700;font-size:.82rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;">
-            Perfiles Disponibles
+      <!-- SUB-TABS Stock -->
+      <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--g200);border-radius:8px;padding:4px;">
+        <button id="sid-tab-generador" onclick="sidTab('generador')"
+          style="flex:1;padding:10px;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:var(--blue);color:white;transition:.2s;">
+          ⚙️ Generador
+        </button>
+        <button id="sid-tab-scanner" onclick="sidTab('scanner')"
+          style="flex:1;padding:10px;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:transparent;color:var(--g700);transition:.2s;">
+          🔫 Escáner
+        </button>
+        <button id="sid-tab-resumen" onclick="sidTab('resumen')"
+          style="flex:1;padding:10px;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:transparent;color:var(--g700);transition:.2s;">
+          📊 Resumen
+        </button>
+      </div>
+
+      <!-- GENERADOR SIDERSA -->
+      <div id="sid-panel-generador">
+                <div class="card">
+          <div class="fg">
+            <label for="tipo-viga2">📐 Tipo / Medida de Viga</label>
+            <select id="tipo-viga2" onchange="document.getElementById('tipo-viga').value=this.value">
+              <option value="">— Seleccioná una medida —</option>
+              <optgroup label="W 150">
+                <option>W 150 x 13,0 148 100 4.3 4.9</option>
+                <option>W 150 x 18,0 153 102 5.8 7.1</option>
+                <option>W 150 x 22,5 152 152 5.8 6.6</option>
+                <option>W 150 x 29,8 157 153 6.6 9.3</option>
+              </optgroup>
+              <optgroup label="W 200">
+                <option>W 200 x 15,0 200 100 4.3 5.2</option>
+                <option>W 200 x 19,3 203 102 5.8 6.5</option>
+                <option>W 200 x 22,5 206 102 6.2 8.0</option>
+                <option>W 200 x 26,6 207 133 5.8 8.4</option>
+                <option>W 200 x 31,3 210 134 6.4 10.4</option>
+                <option>W 200 x 35,9 201 165 6.2 10.2</option>
+                <option>W 200 x 46,1 203 203 7.2 11.0</option>
+                <option>W 200 x 59,0 210 205 9.1 14.2</option>
+                <option>W 200 x 71 216 206 10.2 17.4</option>
+                <option>HP 200 x 86 222 209 13 20.6</option>
+              </optgroup>
+              <optgroup label="W 250">
+                <option>W 250 x 17,9 251 101 4.8 5.3</option>
+                <option>W 250 x 22,3 254 102 5.8 6.9</option>
+                <option>W 250 x 25,3 257 102 6.1 8.4</option>
+                <option>W 250 x 28,4 260 102 6.4 10.0</option>
+                <option>W 250 x 32,7 258 146 6.1 9.1</option>
+                <option>W 250 x 38,5 262 147 6.8 11.2</option>
+                <option>HP 250 x 62,0 246 256 10.5 10.7</option>
+                <option>HP 250 x 73,0 253 254 8.6 14.2</option>
+                <option>W 250 x 89,0 260 256 10.7 17.3</option>
+              </optgroup>
+              <optgroup label="W 310">
+                <option>W 310 x 21,0 303 101 5.1 5.7</option>
+                <option>W 310 x 23,8 305 101 5.6 6.7</option>
+                <option>W 310 x 28,3 309 102 6.0 8.9</option>
+                <option>W 310 x 32,7 313 102 6.6 10.8</option>
+                <option>W 310 x 38,7 310 165 5.8 9.7</option>
+                <option>W 310 x 44,5 313 166 6.6 11.2</option>
+                <option>W 310 x 52,0 317 167 7.6 13.2</option>
+                <option>HP 310 x 79,0 299 306 11.0 11.0</option>
+                <option>W 310 x 97,0 308 305 9.9 15.4</option>
+                <option>W 310 x 129,0 318 308 13.1 20.6</option>
+                <option>W 310 x 143,0 323 309 14.0 22.9</option>
+                <option>W 310 x 179,0 333 313 18.0 28.1</option>
+              </optgroup>
+              <optgroup label="W 360">
+                <option>W 360 x 32,9 349 127 5.8 8.5</option>
+                <option>W 360 x 39,0 353 128 6.5 10.7</option>
+                <option>W 360 x 44,6 352 171 6.9 9.8</option>
+                <option>W 360 x 51,0 355 171 7.2 11.6</option>
+                <option>W 360 x 64,0 347 203 7.7 13.5</option>
+                <option>W 360 x 101,0 357 255 10.5 18.3</option>
+                <option>W 360 x 110,0 360 256 11.4 19.9</option>
+                <option>W 360 x 134</option>
+                <option>W 360 x 196</option>
+              </optgroup>
+              <optgroup label="W 410">
+                <option>W 410 x 38,8 399 140 6.4 8.8</option>
+                <option>W 410 x 46,1 403 140 7.0 11.2</option>
+                <option>W 410 x 53,0 403 177 7.5 10.9</option>
+                <option>W 410 x 60,0 407 178 7.7 12.8</option>
+                <option>W 410 x 67,0 410 179 8.8 14.4</option>
+                <option>W 410 x 75,0 413 180 9.7 16.0</option>
+                <option>W 410 x 85,0 417 181 10.9 18.2</option>
+                <option>W 410 x 100</option>
+              </optgroup>
+              <optgroup label="W 460">
+                <option>W 460 x 52,0 450 152 7.6 10.8</option>
+                <option>W 460 x 60,0 455 153 8.0 13.3</option>
+                <option>W 460 x 74,0 457 190 9.0 14.5</option>
+                <option>W 460 x 106,0 469 194 12.6 20.6</option>
+              </optgroup>
+              <optgroup label="W 530">
+                <option>W 530 x 66,0 525 165 8.9 11.4</option>
+                <option>W 530 x 72,0 524 207 9.0 10.9</option>
+                <option>W 530 x 74,0 529 186 9.7 13.6</option>
+                <option>W 530 x 82,0 528 208 9.5 13.3</option>
+                <option>W 530 x 85,0 535 186 10.3 16.5</option>
+                <option>W 530 x 92,0 533 209 10.2 15.6</option>
+                <option>W 530 x 101,0 537 210 10.9 17.4</option>
+                <option>W 530 x 109,0 539 211 11.6 18.8</option>
+                <option>W 530 x 138,0 549 214 14.7 23.6</option>
+              </optgroup>
+              <optgroup label="W 610">
+                <option>W 610 x 82,0 599 178 10.0 12.8</option>
+                <option>W 610 x 101,0 603 228 10.5 14.9</option>
+                <option>W 610 x 113,0 608 228 11.2 17.3</option>
+                <option>W 610 x 125,0 612 229 11.9 19.6</option>
+                <option>W 610 x 140,0 617 230 13.1 22.2</option>
+                <option>W 610 x 153,0 623 229 14.0 24.9</option>
+                <option>W 610 x 155,0 611 324 12.7 19.0</option>
+                <option>W 610 x 174,0 616 325 14.0 21.6</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="fg">
+            <label for="cantidad2">🔢 Cantidad a Ingresar</label>
+            <input type="number" id="cantidad2" min="1" max="500" placeholder="Ej: 10"
+                   oninput="document.getElementById('cantidad').value=this.value" />
+          </div>
+          <button class="btn btn-primary btn-full" id="btn-generar2" onclick="document.getElementById('btn-generar').click()">
+            ⚡ Generar e Ingresar al Stock
+          </button>
+        </div>
+        <div id="barcode-section2" style="display:none;">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+              <p style="font-weight:700;font-size:.8rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;">
+                🏷️ Etiquetas Generadas
+              </p>
+              <button class="btn btn-red" onclick="window.print()">🖨️ Imprimir Etiquetas</button>
+            </div>
+            <div id="print-zone2">
+              <div id="barcode-container2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ESCÁNER SIDERSA -->
+      <div id="sid-panel-scanner" style="display:none;">
+                <div class="card">
+          <div class="scan-ready">
+            <div class="dot"></div>
+            Lector listo — apunte y dispare
+          </div>
+          <div class="fg">
+            <label for="obra2">🏗️ Número de Obra <span style="font-weight:400;opacity:.6;font-size:.85em;">(opcional)</span></label>
+            <input type="text" id="obra2" placeholder="Ej: OBR-2024-045 — opcional" autocomplete="off"
+                   oninput="document.getElementById('obra').value=this.value" />
+          </div>
+          <div class="fg">
+            <label for="qr2">🔫 Código de Barras (Pistola Lectora)</label>
+            <input type="text" id="qr2" class="barcode-field"
+                   placeholder="Esperando lectura..."
+                   autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </div>
+        </div>
+        <div class="card">
+          <p style="font-weight:700;font-size:.8rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;margin-bottom:11px;">
+            📋 Últimos Registros de Esta Sesión
           </p>
-          <button class="btn btn-primary" id="btn-refrescar" onclick="cargarStock()">🔄 Actualizar</button>
+          <div id="scan-log2">
+            <div style="color:var(--g400);font-size:.84rem;text-align:center;padding:14px;">Sin registros aún</div>
+          </div>
         </div>
+      </div>
 
-        <!-- Búsqueda rápida -->
-        <div class="fg" style="margin-bottom:14px;">
-          <input type="text" id="stock-buscar" placeholder="🔍 Filtrar por perfil... (ej: W 310, HP 250)" 
-                 oninput="filtrarStock()" autocomplete="off" />
+      <!-- RESUMEN SIDERSA -->
+      <div id="sid-panel-resumen" style="display:none;">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <p style="font-weight:700;font-size:.82rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;">
+              Perfiles Disponibles
+            </p>
+            <button class="btn btn-primary" id="btn-refrescar" onclick="cargarStock()">🔄 Actualizar</button>
+          </div>
+          <div class="fg" style="margin-bottom:14px;">
+            <input type="text" id="stock-buscar" placeholder="🔍 Filtrar por perfil... (ej: W 310, HP 250)"
+                   oninput="filtrarStock()" autocomplete="off" />
+          </div>
+          <div id="stock-loading" style="text-align:center;padding:30px;color:var(--g400);display:none;">
+            ⏳ Cargando stock...
+          </div>
+          <div id="stock-tabla-wrap">
+            <table id="stock-tabla" style="width:100%;border-collapse:collapse;font-size:.88rem;display:none;">
+              <thead>
+                <tr style="background:var(--blue-dark);color:white;">
+                  <th style="padding:10px 12px;text-align:left;font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em;font-size:.9rem;">PERFIL</th>
+                  <th style="padding:10px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em;font-size:.9rem;">DISPONIBLES</th>
+                  <th style="padding:10px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em;font-size:.9rem;">CONSUMIDOS</th>
+                  <th style="padding:10px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em;font-size:.9rem;">TOTAL</th>
+                </tr>
+              </thead>
+              <tbody id="stock-tbody"></tbody>
+            </table>
+          </div>
+          <div id="stock-empty" style="text-align:center;padding:30px;color:var(--g400);display:none;">
+            No hay datos de stock todavía. Generá perfiles primero.
+          </div>
+          <div id="stock-error" style="display:none;background:#FEE2E2;border:1px solid #FCA5A5;border-radius:8px;padding:14px;color:#991B1B;font-size:.88rem;margin-top:10px;"></div>
         </div>
-
-        <div id="stock-loading" style="text-align:center;padding:30px;color:var(--g400);display:none;">
-          ⏳ Cargando stock...
-        </div>
-        <div id="stock-tabla-wrap">
-          <table id="stock-tabla" style="width:100%;border-collapse:collapse;font-size:.88rem;display:none;">
-            <thead>
-              <tr style="background:var(--blue-dark);color:white;">
-                <th style="padding:10px 12px;text-align:left;font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em;font-size:.9rem;">PERFIL</th>
-                <th style="padding:10px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em;font-size:.9rem;">DISPONIBLES</th>
-                <th style="padding:10px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em;font-size:.9rem;">CONSUMIDOS</th>
-                <th style="padding:10px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em;font-size:.9rem;">TOTAL</th>
-              </tr>
-            </thead>
-            <tbody id="stock-tbody"></tbody>
-          </table>
-        </div>
-        <div id="stock-empty" style="text-align:center;padding:30px;color:var(--g400);display:none;">
-          No hay datos de stock todavía. Generá perfiles primero.
-        </div>
-        <div id="stock-error" style="display:none;background:#FEE2E2;border:1px solid #FCA5A5;border-radius:8px;padding:14px;color:#991B1B;font-size:.88rem;margin-top:10px;"></div>
       </div>
     </div>
 
@@ -1085,6 +1269,100 @@ async function cargarResumenBobinas() {
     document.getElementById('bob-resumen-loading').style.display = 'none';
   }
 }
+</script>
+
+
+<script>
+/* ══ SUB-TABS SIDERSA ══ */
+function sidTab(tab) {
+  ['generador','scanner','resumen'].forEach(t => {
+    const p = document.getElementById('sid-panel-' + t);
+    if (p) p.style.display = t === tab ? 'block' : 'none';
+    const btn = document.getElementById('sid-tab-' + t);
+    if (btn) {
+      btn.style.background = t === tab ? 'var(--blue)' : 'transparent';
+      btn.style.color = t === tab ? 'white' : 'var(--g700)';
+    }
+  });
+  if (tab === 'resumen') cargarStock();
+  if (tab === 'scanner') setTimeout(() => {
+    const el = document.getElementById('qr2');
+    if (el) { el.focus(); el.select(); }
+  }, 80);
+}
+
+/* ── ESCÁNER del sub-tab Sidersa ── */
+document.addEventListener('DOMContentLoaded', () => {
+  const qr2 = document.getElementById('qr2');
+  if (!qr2) return;
+  qr2.addEventListener('keypress', async e => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+
+    const code   = qr2.value.trim();
+    const obra   = (document.getElementById('obra2').value || '').trim();
+
+    if (!code) { flash('⚠️ El campo está vacío', 'err'); qr2.focus(); return; }
+    if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'PEGAR_URL_AQUI') {
+      flash('⚠️ Configurá la URL del script', 'err'); return;
+    }
+
+    qr2.value    = '';
+    qr2.disabled = true;
+
+    try {
+      const res  = await fetch(window.APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ accion: 'consumir', qr_code: code, numero_obra: obra || 'Sin asignar' })
+      });
+      const data = await res.json();
+
+      // Log en el scan-log2
+      const log2 = document.getElementById('scan-log2');
+      const entry = document.createElement('div');
+      entry.className = 'log-row';
+      entry.innerHTML = `
+        <span class="badge ${data.success ? 'b-ok' : 'b-err'}">${data.success ? '✓ OK' : '✗ ERR'}</span>
+        <span class="log-code">${code}</span>
+        <span class="log-detail">Obra: ${obra || '—'}</span>
+        <span class="log-time">${new Date().toLocaleTimeString('es-AR')}</span>`;
+      if (log2.querySelector('div[style]')) log2.innerHTML = '';
+      log2.insertBefore(entry, log2.firstChild);
+
+      if (data.success) {
+        flash('✅ Viga registrada: ' + code, 'ok');
+        document.body.style.background = '#dcfce7';
+        setTimeout(() => document.body.style.background = '', 350);
+      } else {
+        flash('❌ ' + data.message, 'err');
+      }
+    } catch {
+      flash('🔌 Error de conexión', 'err');
+    } finally {
+      qr2.disabled = false;
+      qr2.focus();
+    }
+  });
+});
+
+/* ── GENERADOR del sub-tab Sidersa — mostrar etiquetas en barcode-container2 ── */
+// Observar cuando se generan etiquetas en el generador original y reflejarlas
+const _origRenderCodigoBarras = window.renderCodigoBarras;
+document.addEventListener('DOMContentLoaded', () => {
+  // Sincronizar btn-generar2 con resultado del generador original
+  const origContainer = document.getElementById('barcode-container');
+  if (origContainer) {
+    const obs = new MutationObserver(() => {
+      const container2 = document.getElementById('barcode-container2');
+      const section2   = document.getElementById('barcode-section2');
+      if (container2 && origContainer.children.length > 0) {
+        container2.innerHTML = origContainer.innerHTML;
+        if (section2) section2.style.display = 'block';
+      }
+    });
+    obs.observe(origContainer, { childList: true });
+  }
+});
 </script>
 
 </body>
