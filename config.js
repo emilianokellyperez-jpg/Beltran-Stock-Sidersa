@@ -1,13 +1,5 @@
-// ═══════════════════════════════════════════════════════
-//  config.js — Beltran S.A.
-//  ¡ÚNICO ARCHIVO QUE TENÉS QUE EDITAR!
-//
-//  1. Seguí los pasos del README para crear el Apps Script
-//  2. Copiá la URL que te da Google al hacer "Deploy"
-//  3. Pegala abajo reemplazando el texto PEGAR_URL_AQUI
-// ═══════════════════════════════════════════════════════
-
-window.APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTelHqA8yAWwpRqmLPZ6QLVjgJQdmu86_9ywhpoyR3782rYFGly9D2k6dHDVTM-jA1/exec';
-
-// Ejemplo de cómo se ve una URL real:
-// window.APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/exec';
+// ── Beltran S.A. — Configuración ──────────────────────────────
+// Pegá aquí la URL de tu Google Apps Script publicado.
+// Extensiones → Apps Script → Implementar → Administrar implementaciones
+// → Nueva versión → "Cualquier usuario" → Copiar URL
+window.APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx2EGKIJ8oYGdP6MI6jA87MhFEIH9Q2gkbI0UEdTQu2VzSDJMMVNj3n8QtuTkP-CVU/exec';
