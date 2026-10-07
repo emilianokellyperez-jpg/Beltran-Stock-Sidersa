@@ -6,7 +6,6 @@
   <title>Beltran S.A. — Control de Stock</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
-  <!-- JsBarcode para generar códigos de barras -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
   <style>
     :root {
@@ -70,9 +69,9 @@
     .brand span { font-size: .72rem; opacity: .6; letter-spacing: .1em; text-transform: uppercase; }
     #clock { font-family: 'Barlow Condensed', sans-serif; font-size: 1.2rem; font-weight: 600; letter-spacing: .06em; opacity: .85; }
 
-    /* ── TABS ── */
-    .tabs-bar { background: var(--blue-dark); padding: 0 22px; border-bottom: 1px solid rgba(255,255,255,.08); }
-    .tabs { display: flex; gap: 2px; max-width: 860px; margin: 0 auto; }
+    /* ── MAIN TABS ── */
+    .tabs-bar { background: var(--blue-dark); padding: 0 22px; border-bottom: 2px solid rgba(255,255,255,.08); }
+    .tabs { display: flex; gap: 2px; max-width: 900px; margin: 0 auto; }
     .tab-btn {
       padding: 13px 26px; background: transparent; border: none; cursor: pointer;
       color: rgba(255,255,255,.5);
@@ -83,8 +82,21 @@
     .tab-btn:hover { color: rgba(255,255,255,.85); }
     .tab-btn.active { color: white; border-bottom-color: var(--red); }
 
+    /* ── SUB-TABS ── */
+    .subtabs-bar { background: var(--blue-lt); border-bottom: 2px solid var(--g200); padding: 0 22px; }
+    .subtabs { display: flex; gap: 2px; max-width: 900px; margin: 0 auto; }
+    .subtab-btn {
+      padding: 10px 20px; background: transparent; border: none; cursor: pointer;
+      color: var(--g400);
+      font-family: 'Barlow Condensed', sans-serif; font-size: .9rem; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase;
+      border-bottom: 3px solid transparent; transition: color .2s, border-color .2s;
+    }
+    .subtab-btn:hover { color: var(--blue); }
+    .subtab-btn.active { color: var(--blue-dark); border-bottom-color: var(--blue); }
+
     /* ── PANELS ── */
-    main { max-width: 860px; margin: 0 auto; padding: 26px 18px 60px; }
+    main { max-width: 900px; margin: 0 auto; padding: 26px 18px 60px; }
     .panel { display: none; }
     .panel.active { display: block; animation: panelIn .3s ease; }
     @keyframes panelIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
@@ -117,7 +129,6 @@
     .fg input.barcode-field {
       font-family: 'Barlow Condensed', sans-serif; font-size: 1.2rem; font-weight: 700;
       letter-spacing: .1em; border-color: var(--blue-mid);
-      border-width: 2px;
     }
 
     /* ── BUTTONS ── */
@@ -161,14 +172,14 @@
     @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(22,163,74,.4); } 50% { box-shadow: 0 0 0 6px rgba(22,163,74,0); } }
 
     /* ── SCAN LOG ── */
-    #scan-log { background: var(--g100); border: 1px solid var(--g200); border-radius: 8px; padding: 12px; max-height: 210px; overflow-y: auto; }
+    #scan-log, #bob-scan-log { background: var(--g100); border: 1px solid var(--g200); border-radius: 8px; padding: 12px; max-height: 210px; overflow-y: auto; }
     .log-row { display: flex; gap: 9px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--g200); font-size: .84rem; animation: logIn .25s ease; }
     .log-row:last-child { border-bottom: none; }
     @keyframes logIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: translateX(0); } }
     .badge { padding: 2px 8px; border-radius: 4px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: .76rem; flex-shrink: 0; }
     .b-ok  { background: #DCFCE7; color: #166534; }
     .b-err { background: #FEE2E2; color: #991B1B; }
-    .log-code { font-weight: 600; color: var(--blue-dark); }
+    .log-code { font-weight: 600; color: var(--blue-dark); font-size: .82rem; }
     .log-detail { color: var(--g400); font-size: .78rem; }
     .log-time { margin-left: auto; color: var(--g400); font-size: .76rem; white-space: nowrap; }
 
@@ -185,7 +196,19 @@
     .barcode-item .bc-code { font-family: 'Barlow Condensed', sans-serif; font-size: .75rem; font-weight: 700; color: var(--blue-dark); letter-spacing: .04em; text-align: center; }
     .barcode-item .bc-type { font-size: .7rem; color: var(--g400); text-align: center; }
 
-    /* ── CONFIG BANNER ── */
+    /* ── BOBINA BARCODE PREVIEW ── */
+    #bob-label-section { display: none; }
+    #bob-label-section.on { display: block; }
+    #bob-label-preview {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      padding: 18px; border: 2px solid var(--g200); border-radius: 8px;
+      background: white; max-width: 340px; margin: 0 auto;
+    }
+    #bob-label-preview svg { max-width: 280px; }
+    #bob-label-preview .bob-code-txt { font-family: 'Barlow Condensed', sans-serif; font-size: .85rem; font-weight: 700; color: var(--blue-dark); letter-spacing: .06em; }
+    #bob-label-preview .bob-medida-txt { font-size: .78rem; color: var(--g400); }
+
+    /* ── STOCK TABLE ── */
     #config-warning {
       background: #FEF3C7; border: 2px solid #F59E0B;
       border-radius: var(--r); padding: 16px 20px; margin-bottom: 18px;
@@ -194,43 +217,13 @@
     #config-warning.show { display: block; }
     #config-warning strong { display: block; margin-bottom: 4px; font-size: 1rem; }
 
-    /* ── PRINT — Etiqueta térmica 80mm × 45mm ── */
-    @page { size: 80mm 45mm; margin: 0; }
-    @media print {
-      html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
-      /* Ocultar todo */
-      body > * { display: none !important; }
-      /* Mostrar solo el contenedor de impresión activo */
-      #print-wrapper { display: block !important; }
-      #print-wrapper * { display: revert !important; }
-      /* Etiqueta individual */
-      .barcode-item {
-        width: 80mm !important;
-        height: 45mm !important;
-        box-sizing: border-box !important;
-        padding: 2mm 3mm !important;
-        margin: 0 !important;
-        border: none !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-        page-break-after: always !important;
-        page-break-inside: avoid !important;
-        overflow: hidden !important;
-        background: white !important;
-      }
-      .barcode-item svg { width: 74mm !important; height: auto !important; max-height: 32mm !important; display: block !important; }
-      .barcode-item .bc-code { font-size: 7pt !important; font-weight: 700 !important; margin-top: 1mm !important; color: black !important; }
-      .barcode-item .bc-type { font-size: 6pt !important; color: #333 !important; margin-top: .5mm !important; }
-    }
-
     @media (max-width: 580px) {
       header { padding: 10px 14px; }
       header img { height: 36px; }
       main { padding: 16px 12px 60px; }
       .card { padding: 18px 16px; }
       .tab-btn { padding: 11px 14px; font-size: .88rem; }
+      .subtab-btn { padding: 9px 12px; font-size: .82rem; }
     }
   </style>
 </head>
@@ -240,7 +233,7 @@
 <div id="splash">
   <img id="splash-logo" src="Gemini_Generated_Image_j7tls5j7tls5j7tl.png" alt="Beltran S.A."
        onerror="this.style.display='none'" />
-  <p>Control de Stock · Vigas</p>
+  <p>Control de Stock · Sidersa</p>
   <div id="splash-bar"></div>
 </div>
 
@@ -250,231 +243,49 @@
     <img src="Gemini_Generated_Image_j7tls5j7tls5j7tl.png" alt="Logo" onerror="this.style.display='none'" />
     <div class="brand">
       <h2>Control de Stock</h2>
-      <span>Ingeniería en Construcciones</span>
+      <span>Ingeniería Beltrán S.A.</span>
     </div>
     <span id="clock">--:--:--</span>
   </header>
 
+  <!-- MAIN TABS -->
   <div class="tabs-bar">
     <div class="tabs">
-      <button class="tab-btn active" data-tab="stock">📊 Stock Sidersa</button>
-      <button class="tab-btn" data-tab="bobinas">🔄 Stock Bobinas</button>
+      <button class="tab-btn active" data-maintab="sidersa">🏗️ Stock Sidersa</button>
+      <button class="tab-btn" data-maintab="bobinas">🥁 Stock Bobinas</button>
     </div>
   </div>
 
-  <main>
-
-    <!-- ══ PANEL ESCÁNER ══ -->
-    <div id="panel-scanner" style="display:none!important;">
-      <div class="hero">
-        <div class="hero-icon">📦</div>
-        <div>
-          <h3>Stock Usado El Día De Hoy</h3>
-          <p>Escaneá cada viga consumida. El cursor vuelve automáticamente al campo de código.</p>
-        </div>
-      </div>
-
-      <div id="config-warning">
-        <strong>⚠️ Falta configurar la URL del script</strong>
-        Abrí el archivo <code>config.js</code> y pegá tu URL de Google Apps Script.
-      </div>
-
-      <div class="card">
-        <div class="scan-ready">
-          <div class="dot"></div>
-          Lector listo — apunte y dispare
-        </div>
-
-        <div class="fg">
-          <label for="obra">🏗️ Número de Obra <span style="font-weight:400;opacity:.6;font-size:.85em;">(opcional)</span></label>
-          <input type="text" id="obra" placeholder="Ej: OBR-2024-045 — opcional" autocomplete="off" />
-        </div>
-
-        <div class="fg">
-          <label for="qr">🔫 Código de Barras (Pistola Lectora)</label>
-          <input type="text" id="qr" class="barcode-field"
-                 placeholder="Esperando lectura..."
-                 autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
-        </div>
-      </div>
-
-      <div class="card">
-        <p style="font-weight:700;font-size:.8rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;margin-bottom:11px;">
-          📋 Últimos Registros de Esta Sesión
-        </p>
-        <div id="scan-log">
-          <div style="color:var(--g400);font-size:.84rem;text-align:center;padding:14px;">Sin registros aún</div>
-        </div>
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- SIDERSA SECTION                                             -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <div id="section-sidersa">
+    <div class="subtabs-bar">
+      <div class="subtabs">
+        <button class="subtab-btn active" data-sub="sid" data-panel="sid-generador">⚙️ Generador</button>
+        <button class="subtab-btn" data-sub="sid" data-panel="sid-scanner">📡 Escáner</button>
+        <button class="subtab-btn" data-sub="sid" data-panel="sid-stock">📊 Resumen</button>
       </div>
     </div>
+    <main>
 
-    <!-- ══ PANEL GENERADOR ══ -->
-    <div id="panel-generador" style="display:none!important;">
-      <div class="hero">
-        <div class="hero-icon">⚙️</div>
-        <div>
-          <h3>Generador de Stock</h3>
-          <p>Ingresá vigas nuevas y generá sus etiquetas con código de barras para imprimir.</p>
+      <!-- SUB: GENERADOR SIDERSA -->
+      <div id="sid-generador" class="panel active">
+        <div class="hero">
+          <div class="hero-icon">⚙️</div>
+          <div>
+            <h3>Generador de Perfiles</h3>
+            <p>Ingresá vigas nuevas y generá sus etiquetas con código de barras para imprimir.</p>
+          </div>
         </div>
-      </div>
-
-      <div class="card">
-        <div class="fg">
-          <label for="tipo-viga">📐 Tipo / Medida de Viga</label>
-          <select id="tipo-viga">
-            <option value="">— Seleccioná una medida —</option>
-            <optgroup label="W 150">
-              <option>W 150 x 13,0 148 100 4.3 4.9</option>
-              <option>W 150 x 18,0 153 102 5.8 7.1</option>
-              <option>W 150 x 22,5 152 152 5.8 6.6</option>
-              <option>W 150 x 29,8 157 153 6.6 9.3</option>
-            </optgroup>
-            <optgroup label="W 200">
-              <option>W 200 x 15,0 200 100 4.3 5.2</option>
-              <option>W 200 x 19,3 203 102 5.8 6.5</option>
-              <option>W 200 x 22,5 206 102 6.2 8.0</option>
-              <option>W 200 x 26,6 207 133 5.8 8.4</option>
-              <option>W 200 x 31,3 210 134 6.4 10.4</option>
-              <option>W 200 x 35,9 201 165 6.2 10.2</option>
-              <option>W 200 x 46,1 203 203 7.2 11.0</option>
-              <option>W 200 x 59,0 210 205 9.1 14.2</option>
-              <option>W 200 x 71 216 206 10.2 17.4</option>
-              <option>HP 200 x 86 222 209 13 20.6</option>
-            </optgroup>
-            <optgroup label="W 250">
-              <option>W 250 x 17,9 251 101 4.8 5.3</option>
-              <option>W 250 x 22,3 254 102 5.8 6.9</option>
-              <option>W 250 x 25,3 257 102 6.1 8.4</option>
-              <option>W 250 x 28,4 260 102 6.4 10.0</option>
-              <option>W 250 x 32,7 258 146 6.1 9.1</option>
-              <option>W 250 x 38,5 262 147 6.8 11.2</option>
-              <option>HP 250 x 62,0 246 256 10.5 10.7</option>
-              <option>HP 250 x 73,0 253 254 8.6 14.2</option>
-              <option>W 250 x 89,0 260 256 10.7 17.3</option>
-            </optgroup>
-            <optgroup label="W 310">
-              <option>W 310 x 21,0 303 101 5.1 5.7</option>
-              <option>W 310 x 23,8 305 101 5.6 6.7</option>
-              <option>W 310 x 28,3 309 102 6.0 8.9</option>
-              <option>W 310 x 32,7 313 102 6.6 10.8</option>
-              <option>W 310 x 38,7 310 165 5.8 9.7</option>
-              <option>W 310 x 44,5 313 166 6.6 11.2</option>
-              <option>W 310 x 52,0 317 167 7.6 13.2</option>
-              <option>HP 310 x 79,0 299 306 11.0 11.0</option>
-              <option>W 310 x 97,0 308 305 9.9 15.4</option>
-              <option>W 310 x 129,0 318 308 13.1 20.6</option>
-              <option>W 310 x 143,0 323 309 14.0 22.9</option>
-              <option>W 310 x 179,0 333 313 18.0 28.1</option>
-            </optgroup>
-            <optgroup label="W 360">
-              <option>W 360 x 32,9 349 127 5.8 8.5</option>
-              <option>W 360 x 39,0 353 128 6.5 10.7</option>
-              <option>W 360 x 44,6 352 171 6.9 9.8</option>
-              <option>W 360 x 51,0 355 171 7.2 11.6</option>
-              <option>W 360 x 64,0 347 203 7.7 13.5</option>
-              <option>W 360 x 101,0 357 255 10.5 18.3</option>
-              <option>W 360 x 110,0 360 256 11.4 19.9</option>
-              <option>W 360 x 134</option>
-              <option>W 360 x 196</option>
-            </optgroup>
-            <optgroup label="W 410">
-              <option>W 410 x 38,8 399 140 6.4 8.8</option>
-              <option>W 410 x 46,1 403 140 7.0 11.2</option>
-              <option>W 410 x 53,0 403 177 7.5 10.9</option>
-              <option>W 410 x 60,0 407 178 7.7 12.8</option>
-              <option>W 410 x 67,0 410 179 8.8 14.4</option>
-              <option>W 410 x 75,0 413 180 9.7 16.0</option>
-              <option>W 410 x 85,0 417 181 10.9 18.2</option>
-              <option>W 410 x 100</option>
-            </optgroup>
-            <optgroup label="W 460">
-              <option>W 460 x 52,0 450 152 7.6 10.8</option>
-              <option>W 460 x 60,0 455 153 8.0 13.3</option>
-              <option>W 460 x 74,0 457 190 9.0 14.5</option>
-              <option>W 460 x 106,0 469 194 12.6 20.6</option>
-            </optgroup>
-            <optgroup label="W 530">
-              <option>W 530 x 66,0 525 165 8.9 11.4</option>
-              <option>W 530 x 72,0 524 207 9.0 10.9</option>
-              <option>W 530 x 74,0 529 186 9.7 13.6</option>
-              <option>W 530 x 82,0 528 208 9.5 13.3</option>
-              <option>W 530 x 85,0 535 186 10.3 16.5</option>
-              <option>W 530 x 92,0 533 209 10.2 15.6</option>
-              <option>W 530 x 101,0 537 210 10.9 17.4</option>
-              <option>W 530 x 109,0 539 211 11.6 18.8</option>
-              <option>W 530 x 138,0 549 214 14.7 23.6</option>
-            </optgroup>
-            <optgroup label="W 610">
-              <option>W 610 x 82,0 599 178 10.0 12.8</option>
-              <option>W 610 x 101,0 603 228 10.5 14.9</option>
-              <option>W 610 x 113,0 608 228 11.2 17.3</option>
-              <option>W 610 x 125,0 612 229 11.9 19.6</option>
-              <option>W 610 x 140,0 617 230 13.1 22.2</option>
-              <option>W 610 x 153,0 623 229 14.0 24.9</option>
-              <option>W 610 x 155,0 611 324 12.7 19.0</option>
-              <option>W 610 x 174,0 616 325 14.0 21.6</option>
-            </optgroup>
-          </select>
+        <div id="config-warning">
+          <strong>⚠️ Falta configurar la URL del script</strong>
+          Abrí el archivo <code>config.js</code> y pegá tu URL de Google Apps Script.
         </div>
-
-        <div class="fg">
-          <label for="cantidad">🔢 Cantidad a Ingresar</label>
-          <input type="number" id="cantidad" min="1" max="500" placeholder="Ej: 10" />
-        </div>
-
-        <button class="btn btn-primary btn-full" id="btn-generar">
-          ⚡ Generar e Ingresar al Stock
-        </button>
-      </div>
-
-      <div id="barcode-section">
         <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
-            <p style="font-weight:700;font-size:.8rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;">
-              🏷️ Etiquetas Generadas
-            </p>
-            <button class="btn btn-red" onclick="imprimirEtiquetas('perfiles')">🖨️ Imprimir Etiquetas</button>
-          </div>
-          <div id="print-zone">
-            <div id="barcode-container"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- ══ PANEL STOCK ACTUAL ══ -->
-    <div id="panel-stock" class="panel active">
-      <div class="hero">
-        <div class="hero-icon">📊</div>
-        <div>
-          <h3>Stock Sidersa</h3>
-          <p>Generador de etiquetas, escáner y resumen de stock de perfiles estructurales.</p>
-        </div>
-      </div>
-
-      <!-- SUB-TABS Stock -->
-      <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--g200);border-radius:8px;padding:4px;">
-        <button id="sid-tab-generador" onclick="sidTab('generador')"
-          style="flex:1;padding:10px;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:var(--blue);color:white;transition:.2s;">
-          ⚙️ Generador
-        </button>
-        <button id="sid-tab-scanner" onclick="sidTab('scanner')"
-          style="flex:1;padding:10px;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:transparent;color:var(--g700);transition:.2s;">
-          🔫 Escáner
-        </button>
-        <button id="sid-tab-resumen" onclick="sidTab('resumen')"
-          style="flex:1;padding:10px;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:transparent;color:var(--g700);transition:.2s;">
-          📊 Resumen
-        </button>
-      </div>
-
-      <!-- GENERADOR SIDERSA -->
-      <div id="sid-panel-generador">
-                <div class="card">
           <div class="fg">
-            <label for="tipo-viga2">📐 Tipo / Medida de Viga</label>
-            <select id="tipo-viga2" onchange="document.getElementById('tipo-viga').value=this.value">
+            <label for="tipo-viga">📐 Tipo / Medida de Viga</label>
+            <select id="tipo-viga">
               <option value="">— Seleccioná una medida —</option>
               <optgroup label="W 150">
                 <option>W 150 x 13,0 148 100 4.3 4.9</option>
@@ -570,44 +381,49 @@
             </select>
           </div>
           <div class="fg">
-            <label for="cantidad2">🔢 Cantidad a Ingresar</label>
-            <input type="number" id="cantidad2" min="1" max="500" placeholder="Ej: 10"
-                   oninput="document.getElementById('cantidad').value=this.value" />
+            <label for="cantidad">🔢 Cantidad a Ingresar</label>
+            <input type="number" id="cantidad" min="1" max="500" placeholder="Ej: 10" />
           </div>
-          <button class="btn btn-primary btn-full" id="btn-generar2" onclick="document.getElementById('btn-generar').click()">
+          <button class="btn btn-primary btn-full" id="btn-generar">
             ⚡ Generar e Ingresar al Stock
           </button>
         </div>
-        <div id="barcode-section2" style="display:none;">
+
+        <!-- Etiquetas generadas -->
+        <div id="barcode-section">
           <div class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
               <p style="font-weight:700;font-size:.8rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;">
                 🏷️ Etiquetas Generadas
               </p>
-              <button class="btn btn-red" onclick="imprimirEtiquetas('perfiles')">🖨️ Imprimir Etiquetas</button>
+              <button class="btn btn-red" id="btn-imprimir-perfiles">🖨️ Imprimir Etiquetas</button>
             </div>
-            <div id="print-zone2">
-              <div id="barcode-container2"></div>
-            </div>
+            <div id="barcode-container"></div>
           </div>
         </div>
       </div>
 
-      <!-- ESCÁNER SIDERSA -->
-      <div id="sid-panel-scanner" style="display:none;">
-                <div class="card">
+      <!-- SUB: ESCÁNER SIDERSA -->
+      <div id="sid-scanner" class="panel">
+        <div class="hero">
+          <div class="hero-icon">📡</div>
+          <div>
+            <h3>Escáner de Consumo</h3>
+            <p>Escaneá cada viga consumida. El cursor vuelve automáticamente al campo de código.</p>
+          </div>
+        </div>
+        <div class="card">
           <div class="scan-ready">
             <div class="dot"></div>
             Lector listo — apunte y dispare
           </div>
           <div class="fg">
-            <label for="obra2">🏗️ Número de Obra <span style="font-weight:400;opacity:.6;font-size:.85em;">(opcional)</span></label>
-            <input type="text" id="obra2" placeholder="Ej: OBR-2024-045 — opcional" autocomplete="off"
-                   oninput="document.getElementById('obra').value=this.value" />
+            <label for="obra">🏗️ Número de Obra <span style="font-weight:400;opacity:.6;font-size:.85em;">(opcional)</span></label>
+            <input type="text" id="obra" placeholder="Ej: OBR-2024-045" autocomplete="off" />
           </div>
           <div class="fg">
-            <label for="qr2">🔫 Código de Barras (Pistola Lectora)</label>
-            <input type="text" id="qr2" class="barcode-field"
+            <label for="qr">🔫 Código de Barras</label>
+            <input type="text" id="qr" class="barcode-field"
                    placeholder="Esperando lectura..."
                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
           </div>
@@ -616,14 +432,21 @@
           <p style="font-weight:700;font-size:.8rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;margin-bottom:11px;">
             📋 Últimos Registros de Esta Sesión
           </p>
-          <div id="scan-log2">
+          <div id="scan-log">
             <div style="color:var(--g400);font-size:.84rem;text-align:center;padding:14px;">Sin registros aún</div>
           </div>
         </div>
       </div>
 
-      <!-- RESUMEN SIDERSA -->
-      <div id="sid-panel-resumen" style="display:none;">
+      <!-- SUB: STOCK ACTUAL SIDERSA -->
+      <div id="sid-stock" class="panel">
+        <div class="hero">
+          <div class="hero-icon">📊</div>
+          <div>
+            <h3>Stock Actual — Perfiles</h3>
+            <p>Cantidad de perfiles disponibles en este momento.</p>
+          </div>
+        </div>
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
             <p style="font-weight:700;font-size:.82rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;">
@@ -632,12 +455,10 @@
             <button class="btn btn-primary" id="btn-refrescar" onclick="cargarStock()">🔄 Actualizar</button>
           </div>
           <div class="fg" style="margin-bottom:14px;">
-            <input type="text" id="stock-buscar" placeholder="🔍 Filtrar por perfil... (ej: W 310, HP 250)"
+            <input type="text" id="stock-buscar" placeholder="🔍 Filtrar por perfil..."
                    oninput="filtrarStock()" autocomplete="off" />
           </div>
-          <div id="stock-loading" style="text-align:center;padding:30px;color:var(--g400);display:none;">
-            ⏳ Cargando stock...
-          </div>
+          <div id="stock-loading" style="text-align:center;padding:30px;color:var(--g400);display:none;">⏳ Cargando stock...</div>
           <div id="stock-tabla-wrap">
             <table id="stock-tabla" style="width:100%;border-collapse:collapse;font-size:.88rem;display:none;">
               <thead>
@@ -651,124 +472,135 @@
               <tbody id="stock-tbody"></tbody>
             </table>
           </div>
-          <div id="stock-empty" style="text-align:center;padding:30px;color:var(--g400);display:none;">
-            No hay datos de stock todavía. Generá perfiles primero.
-          </div>
+          <div id="stock-empty" style="text-align:center;padding:30px;color:var(--g400);display:none;">No hay datos de stock. Generá perfiles primero.</div>
           <div id="stock-error" style="display:none;background:#FEE2E2;border:1px solid #FCA5A5;border-radius:8px;padding:14px;color:#991B1B;font-size:.88rem;margin-top:10px;"></div>
         </div>
       </div>
+
+    </main>
+  </div><!-- /section-sidersa -->
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- BOBINAS SECTION                                             -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <div id="section-bobinas" style="display:none;">
+    <div class="subtabs-bar">
+      <div class="subtabs">
+        <button class="subtab-btn active" data-sub="bob" data-panel="bob-generador">⚙️ Generador</button>
+        <button class="subtab-btn" data-sub="bob" data-panel="bob-scanner">📡 Escáner</button>
+        <button class="subtab-btn" data-sub="bob" data-panel="bob-resumen">📊 Resumen</button>
+      </div>
     </div>
+    <main>
 
+      <!-- SUB: GENERADOR BOBINAS -->
+      <div id="bob-generador" class="panel active">
+        <div class="hero" style="background:linear-gradient(135deg,#7b3e19 0%,#b85c2a 100%);">
+          <div class="hero-icon">🥁</div>
+          <div>
+            <h3>Generador de Bobinas</h3>
+            <p>Registrá bobinas nuevas y generá su etiqueta con código de barras para imprimir.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="fg">
+            <label for="bob-medida">📏 Medida de Bobina</label>
+            <select id="bob-medida">
+              <option value="">— Seleccioná una medida —</option>
+              <option value="A">A — Ancho: 240mm · Espesor: 2mm</option>
+              <option value="B">B — Ancho: 250mm · Espesor: 2mm</option>
+              <option value="C">C — Ancho: 260mm · Espesor: 2mm</option>
+              <option value="D">D — Ancho: 300mm · Espesor: 2mm</option>
+              <option value="E">E — Ancho: 340mm · Espesor: 2mm</option>
+              <option value="F">F — Ancho: 350mm · Espesor: 2mm</option>
+              <option value="G">G — Ancho: 360mm · Espesor: 2mm</option>
+              <option value="H">H — Ancho: 400mm · Espesor: 2mm</option>
+              <option value="I">I — Ancho: 420mm · Espesor: 2.5mm</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label for="bob-peso">⚖️ Peso (kg)</label>
+            <input type="number" id="bob-peso" min="1" step="0.1" placeholder="Ej: 850" />
+          </div>
+          <button class="btn btn-full" id="btn-generar-bob"
+                  style="background:#b85c2a;color:white;box-shadow:0 4px 14px rgba(184,92,42,.3);">
+            ⚡ Generar e Ingresar Bobina
+          </button>
+        </div>
 
-    <!-- ══ PANEL BOBINAS ══ -->
-    <div id="panel-bobinas" class="panel">
-      <div class="hero">
-        <div class="hero-icon">🔄</div>
-        <div>
-          <h3>Stock Bobinas</h3>
-          <p>Generá etiquetas, registrá inicio y fin de procesamiento con la pistola láser.</p>
+        <!-- Etiqueta bobina generada -->
+        <div id="bob-label-section">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+              <p style="font-weight:700;font-size:.8rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;">
+                🏷️ Etiqueta Generada
+              </p>
+              <button class="btn btn-red" id="btn-imprimir-bobina">🖨️ Imprimir Etiqueta</button>
+            </div>
+            <div id="bob-label-preview">
+              <svg id="bob-bar-svg"></svg>
+              <span class="bob-code-txt" id="bob-code-display"></span>
+              <span class="bob-medida-txt" id="bob-medida-display"></span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- SUB-TABS -->
-      <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--g200);border-radius:8px;padding:4px;">
-        <button id="bob-tab-scanner" onclick="bobTab('scanner')"
-          style="flex:1;padding:10px;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:var(--blue);color:white;transition:.2s;">
-          🔫 Escáner
-        </button>
-        <button id="bob-tab-generador" onclick="bobTab('generador')"
-          style="flex:1;padding:10px;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:transparent;color:var(--g700);transition:.2s;">
-          ⚙️ Generador
-        </button>
-        <button id="bob-tab-resumen" onclick="bobTab('resumen')"
-          style="flex:1;padding:10px;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:transparent;color:var(--g700);transition:.2s;">
-          📊 Resumen
-        </button>
-      </div>
-
-      <!-- ESCÁNER BOBINAS -->
-      <div id="bob-panel-scanner">
+      <!-- SUB: ESCÁNER BOBINAS -->
+      <div id="bob-scanner" class="panel">
+        <div class="hero" style="background:linear-gradient(135deg,#7b3e19 0%,#b85c2a 100%);">
+          <div class="hero-icon">📡</div>
+          <div>
+            <h3>Escáner de Bobinas</h3>
+            <p>1° escaneo: En proceso · 2° escaneo: Finalizada. El cursor vuelve automáticamente.</p>
+          </div>
+        </div>
         <div class="card">
           <div class="scan-ready">
             <div class="dot"></div>
-            1er escaneo = Inicio proceso · 2do escaneo = Fin proceso
+            Lector listo — apunte y dispare
           </div>
           <div class="fg">
-            <label for="bob-qr">🔦 Código de Barras (Pistola Láser)</label>
-            <input type="text" id="bob-qr" class="bar-field"
+            <label for="bob-qr">🔫 Código de Barras Bobina</label>
+            <input type="text" id="bob-qr" class="barcode-field"
                    placeholder="Esperando lectura..."
                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
           </div>
         </div>
         <div class="card">
-          <p style="font-weight:700;font-size:.8rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">
+          <p style="font-weight:700;font-size:.8rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;margin-bottom:11px;">
             📋 Últimos Registros
           </p>
-          <div id="bob-log">
-            <div style="color:var(--g400);font-size:.83rem;text-align:center;padding:14px;">Sin registros aún</div>
+          <div id="bob-scan-log">
+            <div style="color:var(--g400);font-size:.84rem;text-align:center;padding:14px;">Sin registros aún</div>
           </div>
         </div>
       </div>
 
-      <!-- GENERADOR BOBINAS -->
-      <div id="bob-panel-generador" style="display:none;">
-        <div class="card">
-          <div class="fg">
-            <label for="bob-medida">📐 Medida de Bobina</label>
-            <select id="bob-medida">
-              <option value="">— Seleccioná una medida —</option>
-              <option value="A - 240mm x 2mm">A — Ancho 240mm · Espesor 2mm</option>
-              <option value="B - 280mm x 2mm">B — Ancho 280mm · Espesor 2mm</option>
-              <option value="C - 300mm x 2mm">C — Ancho 300mm · Espesor 2mm</option>
-              <option value="D - 340mm x 2mm">D — Ancho 340mm · Espesor 2mm</option>
-              <option value="E - 340mm x 2.5mm">E — Ancho 340mm · Espesor 2,5mm</option>
-              <option value="F - 360mm x 2mm">F — Ancho 360mm · Espesor 2mm</option>
-              <option value="G - 380mm x 2mm">G — Ancho 380mm · Espesor 2mm</option>
-              <option value="H - 400mm x 2.5mm">H — Ancho 400mm · Espesor 2,5mm</option>
-              <option value="I - 420mm x 2.5mm">I — Ancho 420mm · Espesor 2,5mm</option>
-            </select>
-          </div>
-          <div class="fg">
-            <label for="bob-peso">⚖️ Peso de la Bobina (kg)</label>
-            <input type="number" id="bob-peso" min="1" max="99999" step="0.1" placeholder="Ej: 4250" />
-          </div>
-          <button class="btn btn-primary btn-full" id="btn-bob-generar">
-            ⚡ Generar Etiqueta
-          </button>
-        </div>
-
-        <div id="bob-bar-section" style="display:none;">
-          <div class="card">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
-              <p style="font-weight:700;font-size:.8rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;">
-                🏷️ Etiqueta Generada
-              </p>
-              <button class="btn btn-red" onclick="imprimirEtiquetas('bobinas')">🖨️ Imprimir Etiqueta</button>
-            </div>
-            <div id="bob-print-zone">
-              <div id="bob-bar-container" style="display:flex;flex-wrap:wrap;gap:12px;padding:16px;justify-content:center;"></div>
-            </div>
+      <!-- SUB: RESUMEN BOBINAS -->
+      <div id="bob-resumen" class="panel">
+        <div class="hero" style="background:linear-gradient(135deg,#7b3e19 0%,#b85c2a 100%);">
+          <div class="hero-icon">📊</div>
+          <div>
+            <h3>Resumen de Bobinas</h3>
+            <p>Estado actual de todas las bobinas en el sistema.</p>
           </div>
         </div>
-      </div>
-
-      <!-- RESUMEN BOBINAS -->
-      <div id="bob-panel-resumen" style="display:none;">
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
             <p style="font-weight:700;font-size:.82rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;">
               Estado de Bobinas
             </p>
-            <button class="btn btn-primary" onclick="cargarResumenBobinas()">🔄 Actualizar</button>
+            <button class="btn btn-primary" id="btn-bob-refrescar" onclick="cargarResumenBobinas()">🔄 Actualizar</button>
           </div>
           <div id="bob-resumen-loading" style="text-align:center;padding:30px;color:var(--g400);display:none;">⏳ Cargando...</div>
-          <table id="bob-resumen-tabla" style="width:100%;border-collapse:collapse;font-size:.88rem;display:none;">
+          <table id="bob-resumen-tabla" style="width:100%;border-collapse:collapse;font-size:.86rem;display:none;">
             <thead>
               <tr style="background:var(--blue-dark);color:white;">
-                <th style="padding:10px 12px;text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;">CÓDIGO</th>
-                <th style="padding:10px 12px;text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;">MEDIDA</th>
-                <th style="padding:10px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;">PESO (kg)</th>
-                <th style="padding:10px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;">ESTADO</th>
+                <th style="padding:9px 12px;text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:.88rem;">CÓDIGO</th>
+                <th style="padding:9px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.88rem;">MEDIDA</th>
+                <th style="padding:9px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.88rem;">PESO (kg)</th>
+                <th style="padding:9px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.88rem;">ESTADO</th>
               </tr>
             </thead>
             <tbody id="bob-resumen-tbody"></tbody>
@@ -777,160 +609,222 @@
           <div id="bob-resumen-error" style="display:none;background:#FEE2E2;border:1px solid #FCA5A5;border-radius:8px;padding:14px;color:#991B1B;font-size:.88rem;margin-top:10px;"></div>
         </div>
       </div>
-    </div>
 
-  </main>
-</div>
+    </main>
+  </div><!-- /section-bobinas -->
 
-
-<!-- ZONA DE IMPRESIÓN CENTRAL -->
-<div id="print-wrapper" style="display:none;"></div>
+</div><!-- /app -->
 
 <!-- FLASH -->
 <div id="flash"></div>
 
-<!-- CONFIG -->
 <script src="config.js"></script>
 
 <script>
-/* ═══════════════════════ SPLASH ═══════════════════════ */
-window.addEventListener('load', () => {
-  setTimeout(() => {
+/* ══════════════════════════════════════════════════════════════
+   ALMACENAMIENTO DE DATOS PARA IMPRESIÓN
+   Se llenan cuando se generan los códigos, y se usan al imprimir
+══════════════════════════════════════════════════════════════ */
+var _printPerfiles = [];   // [{code, tipo}]
+var _printBobina   = null; // {code, medida, peso}
+
+/* ══════════════════════════════════════════════════════════════
+   SPLASH
+══════════════════════════════════════════════════════════════ */
+window.addEventListener('load', function() {
+  setTimeout(function() {
     document.getElementById('splash').classList.add('hide');
     document.getElementById('app').classList.add('visible');
-    setTimeout(focusQR, 700);
     checkConfig();
   }, 2700);
 });
 
-/* ═══════════════════════ CLOCK ═══════════════════════ */
-const clockEl = document.getElementById('clock');
-setInterval(() => {
+/* ══════════════════════════════════════════════════════════════
+   CLOCK
+══════════════════════════════════════════════════════════════ */
+var clockEl = document.getElementById('clock');
+setInterval(function() {
   clockEl.textContent = new Date().toLocaleTimeString('es-AR');
 }, 1000);
 
-/* ═══════════════════════ CONFIG CHECK ═══════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   CONFIG CHECK
+══════════════════════════════════════════════════════════════ */
 function checkConfig() {
   if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'PEGAR_URL_AQUI') {
     document.getElementById('config-warning').classList.add('show');
   }
 }
 
-/* ═══════════════════════ TABS ═══════════════════════ */
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+/* ══════════════════════════════════════════════════════════════
+   MAIN TABS (Sidersa / Bobinas)
+══════════════════════════════════════════════════════════════ */
+document.querySelectorAll('[data-maintab]').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('[data-maintab]').forEach(function(b) { b.classList.remove('active'); });
     btn.classList.add('active');
-    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 'scanner') setTimeout(focusQR, 80);
+    var tab = btn.dataset.maintab;
+    document.getElementById('section-sidersa').style.display = (tab === 'sidersa') ? '' : 'none';
+    document.getElementById('section-bobinas').style.display = (tab === 'bobinas') ? '' : 'none';
+    if (tab === 'bobinas') {
+      setTimeout(function() { document.getElementById('bob-qr') && document.getElementById('bob-qr').focus(); }, 100);
+    }
   });
 });
 
-/* ═══════════════════════ TOAST ═══════════════════════ */
-let _ft;
-function flash(msg, type = 'ok') {
-  const f = document.getElementById('flash');
-  clearTimeout(_ft);
-  f.textContent = msg;
-  f.className = `show ${type}`;
-  _ft = setTimeout(() => f.className = '', 3400);
-}
-
-/* ═══════════════════════ FOCO CAMPO ═══════════════════════ */
-function focusQR() {
-  const el = document.getElementById('qr');
-  if (el) { el.focus(); el.select(); }
-}
-document.getElementById('panel-scanner').addEventListener('click', e => {
-  if (e.target.id !== 'obra') focusQR();
+/* ══════════════════════════════════════════════════════════════
+   SUB-TABS
+══════════════════════════════════════════════════════════════ */
+document.querySelectorAll('[data-sub]').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var sub = btn.dataset.sub;
+    // Desactivar todos los subtabs del mismo grupo
+    document.querySelectorAll('[data-sub="' + sub + '"]').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    // Ocultar todos los panels del grupo
+    var panelTarget = btn.dataset.panel;
+    if (sub === 'sid') {
+      ['sid-generador','sid-scanner','sid-stock'].forEach(function(id) {
+        document.getElementById(id).classList.remove('active');
+      });
+      if (panelTarget === 'sid-stock') cargarStock();
+    } else {
+      ['bob-generador','bob-scanner','bob-resumen'].forEach(function(id) {
+        document.getElementById(id).classList.remove('active');
+      });
+      if (panelTarget === 'bob-resumen') cargarResumenBobinas();
+      if (panelTarget === 'bob-scanner') setTimeout(function() { document.getElementById('bob-qr').focus(); }, 80);
+    }
+    document.getElementById(panelTarget).classList.add('active');
+    if (panelTarget === 'sid-scanner') setTimeout(function() { document.getElementById('qr').focus(); }, 80);
+  });
 });
 
-/* ═══════════════════════ LOG ═══════════════════════ */
-const logs = [];
-function addLog(code, obra, ok, msg) {
-  logs.unshift({ code, obra, ok, msg, t: new Date().toLocaleTimeString('es-AR') });
-  document.getElementById('scan-log').innerHTML = logs.slice(0, 40).map(l => `
-    <div class="log-row">
-      <span class="badge ${l.ok ? 'b-ok' : 'b-err'}">${l.ok ? '✓ OK' : '✗ ERR'}</span>
-      <span class="log-code">${l.code}</span>
-      <span class="log-detail">Obra: ${l.obra || '—'}</span>
-      <span class="log-time">${l.t}</span>
-    </div>`).join('');
+/* ══════════════════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════════════════ */
+var _ft;
+function flash(msg, type) {
+  type = type || 'ok';
+  var f = document.getElementById('flash');
+  clearTimeout(_ft);
+  f.textContent = msg;
+  f.className = 'show ' + type;
+  _ft = setTimeout(function() { f.className = ''; }, 3400);
 }
 
-/* ═══════════════════════ ESCÁNER — PISTOLA ═══════════════════════ */
-document.getElementById('qr').addEventListener('keypress', async e => {
+/* ══════════════════════════════════════════════════════════════
+   FOCO CAMPO QR
+══════════════════════════════════════════════════════════════ */
+function focusQR() {
+  var el = document.getElementById('qr');
+  if (el) { el.focus(); el.select(); }
+}
+var scannerPanel = document.getElementById('sid-scanner');
+if (scannerPanel) {
+  scannerPanel.addEventListener('click', function(e) {
+    if (e.target.id !== 'obra') focusQR();
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LOG SIDERSA
+══════════════════════════════════════════════════════════════ */
+var sidLogs = [];
+function addSidLog(code, obra, ok, msg) {
+  sidLogs.unshift({ code: code, obra: obra, ok: ok, msg: msg, t: new Date().toLocaleTimeString('es-AR') });
+  document.getElementById('scan-log').innerHTML = sidLogs.slice(0, 40).map(function(l) {
+    return '<div class="log-row">'
+      + '<span class="badge ' + (l.ok ? 'b-ok' : 'b-err') + '">' + (l.ok ? '✓ OK' : '✗ ERR') + '</span>'
+      + '<span class="log-code">' + l.code + '</span>'
+      + '<span class="log-detail">Obra: ' + (l.obra || '—') + '</span>'
+      + '<span class="log-time">' + l.t + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LOG BOBINAS
+══════════════════════════════════════════════════════════════ */
+var bobLogs = [];
+function addBobLog(code, ok, msg) {
+  bobLogs.unshift({ code: code, ok: ok, msg: msg, t: new Date().toLocaleTimeString('es-AR') });
+  document.getElementById('bob-scan-log').innerHTML = bobLogs.slice(0, 40).map(function(l) {
+    return '<div class="log-row">'
+      + '<span class="badge ' + (l.ok ? 'b-ok' : 'b-err') + '">' + (l.ok ? '✓ OK' : '✗ ERR') + '</span>'
+      + '<span class="log-code">' + l.code + '</span>'
+      + '<span class="log-detail">' + l.msg + '</span>'
+      + '<span class="log-time">' + l.t + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ESCÁNER SIDERSA
+══════════════════════════════════════════════════════════════ */
+document.getElementById('qr').addEventListener('keypress', async function(e) {
   if (e.key !== 'Enter') return;
   e.preventDefault();
-
-  const qrVal  = document.getElementById('qr').value.trim();
-  const obraEl = document.getElementById('obra');
-  const obra   = obraEl.value.trim();
-
+  var qrVal = document.getElementById('qr').value.trim();
+  var obra  = document.getElementById('obra').value.trim();
   if (!qrVal) { flash('⚠️ El campo de código está vacío', 'err'); focusQR(); return; }
   if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'PEGAR_URL_AQUI') {
     flash('⚠️ Configurá la URL del script primero', 'err'); return;
   }
-
   document.getElementById('qr').value = '';
   document.getElementById('qr').disabled = true;
-
   try {
-    const res  = await fetch(window.APPS_SCRIPT_URL, {
+    var res  = await fetch(window.APPS_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify({ accion: 'consumir', qr_code: qrVal, numero_obra: obra || 'Sin asignar' })
     });
-    const data = await res.json();
-
+    var data = await res.json();
     if (data.success) {
-      flash(`✅ Viga registrada: ${qrVal}`, 'ok');
-      addLog(qrVal, obra, true, data.message);
+      flash('✅ Viga registrada: ' + qrVal, 'ok');
+      addSidLog(qrVal, obra, true, data.message);
       document.body.style.background = '#dcfce7';
-      setTimeout(() => document.body.style.background = '', 380);
+      setTimeout(function() { document.body.style.background = ''; }, 380);
     } else {
-      flash(`❌ ${data.message}`, 'err');
-      addLog(qrVal, obra, false, data.message);
+      flash('❌ ' + data.message, 'err');
+      addSidLog(qrVal, obra, false, data.message);
     }
-  } catch {
+  } catch(err) {
     flash('🔌 Error de conexión', 'err');
-    addLog(qrVal, obra, false, 'Error de red');
+    addSidLog(qrVal, obra, false, 'Error de red');
   } finally {
     document.getElementById('qr').disabled = false;
     focusQR();
   }
 });
 
-/* ═══════════════════════ GENERADOR ═══════════════════════ */
-document.getElementById('btn-generar').addEventListener('click', async () => {
-  const tipo     = document.getElementById('tipo-viga').value;
-  const cantidad = parseInt(document.getElementById('cantidad').value);
-  const btn      = document.getElementById('btn-generar');
-
+/* ══════════════════════════════════════════════════════════════
+   GENERADOR SIDERSA
+══════════════════════════════════════════════════════════════ */
+document.getElementById('btn-generar').addEventListener('click', async function() {
+  var tipo     = document.getElementById('tipo-viga').value;
+  var cantidad = parseInt(document.getElementById('cantidad').value);
+  var btn      = document.getElementById('btn-generar');
   if (!tipo)                     { flash('⚠️ Seleccioná el tipo de viga', 'err'); return; }
   if (!cantidad || cantidad < 1) { flash('⚠️ Ingresá una cantidad válida', 'err'); return; }
   if (cantidad > 500)            { flash('⚠️ Máximo 500 por lote', 'err'); return; }
   if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'PEGAR_URL_AQUI') {
     flash('⚠️ Configurá la URL del script primero', 'err'); return;
   }
-
   btn.disabled = true;
   btn.textContent = '⏳ Generando...';
-
   try {
-    const res  = await fetch(window.APPS_SCRIPT_URL, {
+    var res  = await fetch(window.APPS_SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({ accion: 'generar', tipo_viga: tipo, cantidad })
+      body: JSON.stringify({ accion: 'generar', tipo_viga: tipo, cantidad: cantidad })
     });
-    const data = await res.json();
-
+    var data = await res.json();
     if (data.success && data.codes) {
-      flash(`✅ ${data.codes.length} viga(s) ingresadas al stock`, 'ok');
+      flash('✅ ' + data.codes.length + ' viga(s) ingresadas al stock', 'ok');
       renderBarcodes(data.codes, tipo);
     } else {
-      flash(`❌ ${data.message || 'Error al generar'}`, 'err');
+      flash('❌ ' + (data.message || 'Error al generar'), 'err');
     }
-  } catch {
+  } catch(err) {
     flash('🔌 Error de conexión', 'err');
   } finally {
     btn.disabled = false;
@@ -938,518 +832,426 @@ document.getElementById('btn-generar').addEventListener('click', async () => {
   }
 });
 
-/* ═══════════════════════ RENDER CÓDIGOS DE BARRA ═══════════════════════ */
-// Almacén global de datos para impresión
-window._printDataPerfiles = [];
-window._printDataBobinas  = [];
-
+/* ══════════════════════════════════════════════════════════════
+   RENDER BARCODES SIDERSA
+══════════════════════════════════════════════════════════════ */
 function renderBarcodes(codes, tipo) {
-  const container = document.getElementById('barcode-container');
+  // Guardar para imprimir
+  _printPerfiles = codes.map(function(c) { return { code: c, tipo: tipo }; });
+
+  var container = document.getElementById('barcode-container');
   container.innerHTML = '';
 
-  // Guardar para impresión
-  window._printDataPerfiles = codes.map(c => ({ code: c, tipo }));
-
-  codes.forEach(code => {
-    const item = document.createElement('div');
+  codes.forEach(function(code) {
+    var item = document.createElement('div');
     item.className = 'barcode-item';
 
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('id', 'bc-' + code);
     item.appendChild(svg);
 
-    const lblCode = document.createElement('span');
+    var lblCode = document.createElement('span');
     lblCode.className = 'bc-code';
     lblCode.textContent = code;
 
-    const lblTipo = document.createElement('span');
+    var lblTipo = document.createElement('span');
     lblTipo.className = 'bc-type';
     lblTipo.textContent = tipo;
 
-    item.append(lblCode, lblTipo);
+    item.appendChild(lblCode);
+    item.appendChild(lblTipo);
     container.appendChild(item);
 
     JsBarcode(svg, code, {
-      format: 'CODE128', width: 2, height: 60,
-      displayValue: false, margin: 6,
-      lineColor: '#001A55', background: '#ffffff'
+      format: 'CODE128',
+      width: 2,
+      height: 60,
+      displayValue: false,
+      margin: 6,
+      lineColor: '#001A55',
+      background: '#ffffff'
     });
   });
 
   document.getElementById('barcode-section').classList.add('on');
   document.getElementById('barcode-section').scrollIntoView({ behavior: 'smooth' });
 }
-</script>
 
-<script>
-/* ══ STOCK ACTUAL ══ */
-let stockData = [];
+/* ══════════════════════════════════════════════════════════════
+   IMPRIMIR ETIQUETAS SIDERSA
+   Abre una nueva ventana con el HTML completo y JsBarcode incluido.
+   El código de barras se renderiza fresco en esa ventana.
+══════════════════════════════════════════════════════════════ */
+document.getElementById('btn-imprimir-perfiles').addEventListener('click', function() {
+  if (!_printPerfiles || _printPerfiles.length === 0) {
+    flash('⚠️ No hay etiquetas generadas para imprimir', 'err');
+    return;
+  }
 
-async function cargarStock() {
+  var items = _printPerfiles.map(function(item) {
+    return '{"code":"' + item.code + '","tipo":"' + item.tipo.replace(/"/g,'&quot;') + '"}';
+  }).join(',');
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+    + '<title>Etiquetas Beltran</title>'
+    + '<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"><\/script>'
+    + '<style>'
+    + '@page { size: 80mm 45mm; margin: 0; }'
+    + '* { box-sizing: border-box; margin: 0; padding: 0; }'
+    + 'body { background: white; }'
+    + '.etiqueta {'
+    + '  width: 80mm; height: 45mm;'
+    + '  display: flex; flex-direction: column;'
+    + '  align-items: center; justify-content: center;'
+    + '  padding: 3mm 4mm; page-break-after: always;'
+    + '  border: 1px solid #ccc;'
+    + '}'
+    + '.etiqueta:last-child { page-break-after: auto; }'
+    + '.empresa { font-family: Arial, sans-serif; font-weight: 900; font-size: 11pt; color: #001A55; letter-spacing: 1px; margin-bottom: 1mm; }'
+    + '.tipo { font-family: Arial, sans-serif; font-size: 6pt; color: #555; margin-bottom: 2mm; text-align: center; white-space: nowrap; overflow: hidden; max-width: 72mm; }'
+    + '.barcode-wrap { display: flex; justify-content: center; }'
+    + '.barcode-wrap svg { max-width: 72mm; }'
+    + '.code-num { font-family: "Courier New", monospace; font-size: 7pt; color: #333; margin-top: 1mm; letter-spacing: 1px; }'
+    + '<\/style>'
+    + '</head><body>'
+    + '<script>'
+    + 'var items = [' + items + '];'
+    + 'items.forEach(function(item, idx) {'
+    + '  var div = document.createElement("div");'
+    + '  div.className = "etiqueta";'
+    + '  div.innerHTML = "<div class=\'empresa\'>INGENIERIA BELTRAN S.A.<\/div>"'
+    + '    + "<div class=\'tipo\'>" + item.tipo + "<\/div>"'
+    + '    + "<div class=\'barcode-wrap\'><svg id=\'svg" + idx + "\'><\/svg><\/div>"'
+    + '    + "<div class=\'code-num\'>" + item.code + "<\/div>";'
+    + '  document.body.appendChild(div);'
+    + '  JsBarcode(document.getElementById("svg" + idx), item.code, {'
+    + '    format: "CODE128", width: 2.2, height: 55,'
+    + '    displayValue: false, margin: 4,'
+    + '    lineColor: "#001A55", background: "#ffffff"'
+    + '  });'
+    + '});'
+    + 'window.onload = function() { window.print(); };'
+    + '<\/script>'
+    + '</body></html>';
+
+  var win = window.open('', '_blank', 'width=800,height=600');
+  if (!win) {
+    flash('⚠️ El navegador bloqueó la ventana. Permití los pop-ups para este sitio.', 'err');
+    return;
+  }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+});
+
+/* ══════════════════════════════════════════════════════════════
+   STOCK ACTUAL SIDERSA
+══════════════════════════════════════════════════════════════ */
+var stockData = [];
+
+function cargarStock() {
   if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'PEGAR_URL_AQUI') return;
-
   document.getElementById('stock-loading').style.display = 'block';
   document.getElementById('stock-tabla').style.display   = 'none';
   document.getElementById('stock-empty').style.display   = 'none';
   document.getElementById('stock-error').style.display   = 'none';
-  const btn = document.getElementById('btn-refrescar');
+  var btn = document.getElementById('btn-refrescar');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Cargando...'; }
 
-  try {
-    const res  = await fetch(window.APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ accion: 'stock_resumen' })
-    });
-    const data = await res.json();
-
+  fetch(window.APPS_SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({ accion: 'stock_resumen' })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
     if (data.success && data.resumen) {
       stockData = data.resumen;
       renderStock(stockData);
     } else {
       mostrarErrorStock(data.message || 'Error al cargar el stock.');
     }
-  } catch (e) {
-    mostrarErrorStock('Error de conexión con el servidor.');
-  } finally {
+  })
+  .catch(function() { mostrarErrorStock('Error de conexión con el servidor.'); })
+  .finally(function() {
     document.getElementById('stock-loading').style.display = 'none';
     if (btn) { btn.disabled = false; btn.textContent = '🔄 Actualizar'; }
-  }
+  });
 }
 
 function renderStock(data) {
-  const tbody = document.getElementById('stock-tbody');
+  var tbody = document.getElementById('stock-tbody');
   if (!data || data.length === 0) {
     document.getElementById('stock-empty').style.display = 'block';
     return;
   }
-
-  tbody.innerHTML = data.map((row, i) => {
-    const disp  = parseInt(row.disponibles) || 0;
-    const cons  = parseInt(row.consumidos)  || 0;
-    const total = parseInt(row.total)       || 0;
-    const pct   = total > 0 ? Math.round((disp / total) * 100) : 0;
-    const color = disp === 0 ? '#FEE2E2' : disp <= 2 ? '#FEF3C7' : '#F0FDF4';
-    const textColor = disp === 0 ? '#991B1B' : disp <= 2 ? '#92400E' : '#166534';
-
-    return `<tr style="background:${i % 2 === 0 ? 'white' : 'var(--g100)'};">
-      <td style="padding:9px 12px;border-bottom:1px solid var(--g200);font-weight:600;color:var(--blue-dark);">${row.tipo}</td>
-      <td style="padding:9px 12px;border-bottom:1px solid var(--g200);text-align:center;">
-        <span style="background:${color};color:${textColor};padding:3px 10px;border-radius:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:1rem;">
-          ${disp}
-        </span>
-      </td>
-      <td style="padding:9px 12px;border-bottom:1px solid var(--g200);text-align:center;color:var(--g400);">${cons}</td>
-      <td style="padding:9px 12px;border-bottom:1px solid var(--g200);text-align:center;color:var(--g400);">${total}</td>
-    </tr>`;
+  tbody.innerHTML = data.map(function(row, i) {
+    var disp  = parseInt(row.disponibles) || 0;
+    var cons  = parseInt(row.consumidos)  || 0;
+    var total = parseInt(row.total)       || 0;
+    var color     = disp === 0 ? '#FEE2E2' : disp <= 2 ? '#FEF3C7' : '#F0FDF4';
+    var textColor = disp === 0 ? '#991B1B' : disp <= 2 ? '#92400E' : '#166534';
+    return '<tr style="background:' + (i % 2 === 0 ? 'white' : '#F2F4F8') + ';">'
+      + '<td style="padding:9px 12px;border-bottom:1px solid #DDE2EE;font-weight:600;color:#001A55;">' + row.tipo + '</td>'
+      + '<td style="padding:9px 12px;border-bottom:1px solid #DDE2EE;text-align:center;">'
+      + '<span style="background:' + color + ';color:' + textColor + ';padding:3px 10px;border-radius:20px;font-weight:700;font-size:1rem;">'
+      + disp + '</span></td>'
+      + '<td style="padding:9px 12px;border-bottom:1px solid #DDE2EE;text-align:center;color:#8A96B0;">' + cons + '</td>'
+      + '<td style="padding:9px 12px;border-bottom:1px solid #DDE2EE;text-align:center;color:#8A96B0;">' + total + '</td>'
+      + '</tr>';
   }).join('');
-
   document.getElementById('stock-tabla').style.display = 'table';
 }
 
 function filtrarStock() {
-  const q = document.getElementById('stock-buscar').value.toLowerCase().trim();
+  var q = document.getElementById('stock-buscar').value.toLowerCase().trim();
   if (!q) { renderStock(stockData); return; }
-  const filtrado = stockData.filter(r => r.tipo.toLowerCase().includes(q));
-  renderStock(filtrado);
+  renderStock(stockData.filter(function(r) { return r.tipo.toLowerCase().includes(q); }));
 }
 
 function mostrarErrorStock(msg) {
-  const el = document.getElementById('stock-error');
+  var el = document.getElementById('stock-error');
   el.textContent = '❌ ' + msg;
   el.style.display = 'block';
 }
 
-// Cargar stock automáticamente al cambiar a esa pestaña
-const _tabOriginal = document.querySelectorAll.bind(document);
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    if (btn.dataset.tab === 'stock') cargarStock();
-  });
-});
-</script>
+/* ══════════════════════════════════════════════════════════════
+   GENERADOR BOBINAS
+══════════════════════════════════════════════════════════════ */
+var MEDIDAS_BOBINA = {
+  'A': 'Ancho: 240mm · Esp: 2mm',
+  'B': 'Ancho: 250mm · Esp: 2mm',
+  'C': 'Ancho: 260mm · Esp: 2mm',
+  'D': 'Ancho: 300mm · Esp: 2mm',
+  'E': 'Ancho: 340mm · Esp: 2mm',
+  'F': 'Ancho: 350mm · Esp: 2mm',
+  'G': 'Ancho: 360mm · Esp: 2mm',
+  'H': 'Ancho: 400mm · Esp: 2mm',
+  'I': 'Ancho: 420mm · Esp: 2.5mm'
+};
 
-
-<script>
-/* ══ BOBINAS ══ */
-
-// Sub-tabs de bobinas
-function bobTab(tab) {
-  ['scanner','generador','resumen'].forEach(t => {
-    document.getElementById('bob-panel-' + t).style.display = t === tab ? 'block' : 'none';
-    const btn = document.getElementById('bob-tab-' + t);
-    if (t === tab) {
-      btn.style.background = 'var(--blue)';
-      btn.style.color = 'white';
+document.getElementById('btn-generar-bob').addEventListener('click', async function() {
+  var medida = document.getElementById('bob-medida').value;
+  var peso   = parseFloat(document.getElementById('bob-peso').value);
+  var btn    = document.getElementById('btn-generar-bob');
+  if (!medida)           { flash('⚠️ Seleccioná la medida de bobina', 'err'); return; }
+  if (!peso || peso <= 0){ flash('⚠️ Ingresá un peso válido', 'err'); return; }
+  if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'PEGAR_URL_AQUI') {
+    flash('⚠️ Configurá la URL del script primero', 'err'); return;
+  }
+  btn.disabled = true;
+  btn.textContent = '⏳ Generando...';
+  try {
+    var res  = await fetch(window.APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ accion: 'generar_bobina', medida: medida, peso: peso })
+    });
+    var data = await res.json();
+    if (data.success && data.codigo) {
+      flash('✅ Bobina ' + data.codigo + ' ingresada', 'ok');
+      renderBobBarcode(data.codigo, medida, peso);
     } else {
-      btn.style.background = 'transparent';
-      btn.style.color = 'var(--g700)';
+      flash('❌ ' + (data.message || 'Error al generar bobina'), 'err');
     }
-  });
-  if (tab === 'scanner') setTimeout(focusBobQR, 80);
-  if (tab === 'resumen') cargarResumenBobinas();
-}
-
-function focusBobQR() {
-  const el = document.getElementById('bob-qr');
-  if (el && !el.disabled) { el.focus(); el.select(); }
-}
-
-// Activar focus cuando se entra a la pestaña bobinas
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    if (btn.dataset.tab === 'bobinas') setTimeout(() => focusBobQR(), 80);
-  });
+  } catch(err) {
+    flash('🔌 Error de conexión', 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⚡ Generar e Ingresar Bobina';
+  }
 });
 
-/* ── LOG BOBINAS ── */
-const bobLogs = [];
-function addBobLog(code, estado, ok, msg) {
-  bobLogs.unshift({ code, estado, ok, msg, t: new Date().toLocaleTimeString('es-AR') });
-  document.getElementById('bob-log').innerHTML = bobLogs.slice(0, 40).map(l => `
-    <div class="log-row">
-      <span class="badge ${l.ok ? 'b-ok' : 'b-err'}">${l.ok ? '✓ OK' : '✗ ERR'}</span>
-      <span class="log-code">${l.code}</span>
-      <span class="log-detail">${l.estado}</span>
-      <span class="log-time">${l.t}</span>
-    </div>`).join('');
+/* ══════════════════════════════════════════════════════════════
+   RENDER BARCODE BOBINA
+══════════════════════════════════════════════════════════════ */
+function renderBobBarcode(codigo, medida, peso) {
+  // Guardar para imprimir
+  _printBobina = { code: codigo, medida: medida, peso: peso };
+
+  // Texto en pantalla
+  document.getElementById('bob-code-display').textContent = codigo;
+  document.getElementById('bob-medida-display').textContent =
+    (MEDIDAS_BOBINA[medida] || medida) + ' · ' + peso + ' kg';
+
+  // Limpiar SVG anterior y renderizar nuevo
+  var svg = document.getElementById('bob-bar-svg');
+  // Limpiar todos los atributos y contenido del SVG anterior
+  while (svg.firstChild) { svg.removeChild(svg.firstChild); }
+  svg.removeAttribute('width');
+  svg.removeAttribute('height');
+  svg.removeAttribute('viewBox');
+  svg.removeAttribute('style');
+
+  // Renderizar JsBarcode
+  JsBarcode(svg, codigo, {
+    format: 'CODE128',
+    width: 2.5,
+    height: 65,
+    displayValue: false,
+    margin: 6,
+    lineColor: '#001A55',
+    background: '#ffffff'
+  });
+
+  document.getElementById('bob-label-section').classList.add('on');
+  document.getElementById('bob-label-section').scrollIntoView({ behavior: 'smooth' });
 }
 
-/* ── ESCÁNER BOBINAS ── */
-document.getElementById('bob-qr').addEventListener('keypress', async e => {
+/* ══════════════════════════════════════════════════════════════
+   IMPRIMIR ETIQUETA BOBINA
+══════════════════════════════════════════════════════════════ */
+document.getElementById('btn-imprimir-bobina').addEventListener('click', function() {
+  if (!_printBobina) {
+    flash('⚠️ No hay etiqueta de bobina para imprimir', 'err');
+    return;
+  }
+
+  var b    = _printBobina;
+  var desc = (MEDIDAS_BOBINA[b.medida] || b.medida) + ' · ' + b.peso + ' kg';
+  var code = b.code;
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+    + '<title>Etiqueta Bobina</title>'
+    + '<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"><\/script>'
+    + '<style>'
+    + '@page { size: 80mm 45mm; margin: 0; }'
+    + '* { box-sizing: border-box; margin: 0; padding: 0; }'
+    + 'body { background: white; }'
+    + '.etiqueta {'
+    + '  width: 80mm; height: 45mm;'
+    + '  display: flex; flex-direction: column;'
+    + '  align-items: center; justify-content: center; padding: 3mm 4mm;'
+    + '}'
+    + '.empresa { font-family: Arial, sans-serif; font-weight: 900; font-size: 11pt; color: #001A55; letter-spacing: 1px; margin-bottom: 1mm; }'
+    + '.desc { font-family: Arial, sans-serif; font-size: 7.5pt; color: #555; margin-bottom: 2mm; text-align: center; }'
+    + '.barcode-wrap { display: flex; justify-content: center; }'
+    + '.barcode-wrap svg { max-width: 72mm; }'
+    + '.code-num { font-family: "Courier New", monospace; font-size: 7pt; color: #333; margin-top: 1mm; letter-spacing: 1px; }'
+    + '<\/style>'
+    + '</head><body>'
+    + '<script>'
+    + 'window.onload = function() {'
+    + '  var div = document.createElement("div");'
+    + '  div.className = "etiqueta";'
+    + '  div.innerHTML = "<div class=\'empresa\'>INGENIERIA BELTRAN S.A.<\/div>"'
+    + '    + "<div class=\'desc\'>" + ' + JSON.stringify(desc) + ' + "<\/div>"'
+    + '    + "<div class=\'barcode-wrap\'><svg id=\'barsvg\'><\/svg><\/div>"'
+    + '    + "<div class=\'code-num\'>" + ' + JSON.stringify(code) + ' + "<\/div>";'
+    + '  document.body.appendChild(div);'
+    + '  JsBarcode(document.getElementById("barsvg"), ' + JSON.stringify(code) + ', {'
+    + '    format: "CODE128", width: 2.2, height: 55,'
+    + '    displayValue: false, margin: 4,'
+    + '    lineColor: "#001A55", background: "#ffffff"'
+    + '  });'
+    + '  window.print();'
+    + '};'
+    + '<\/script>'
+    + '</body></html>';
+
+  var win = window.open('', '_blank', 'width=800,height=600');
+  if (!win) {
+    flash('⚠️ El navegador bloqueó la ventana. Permití los pop-ups para este sitio.', 'err');
+    return;
+  }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+});
+
+/* ══════════════════════════════════════════════════════════════
+   ESCÁNER BOBINAS
+══════════════════════════════════════════════════════════════ */
+document.getElementById('bob-qr').addEventListener('keypress', async function(e) {
   if (e.key !== 'Enter') return;
   e.preventDefault();
-
-  const input = document.getElementById('bob-qr');
-  const code  = input.value.trim();
-  if (!code) { flash('⚠️ El campo está vacío', 'err'); focusBobQR(); return; }
+  var qrVal = document.getElementById('bob-qr').value.trim();
+  if (!qrVal) { flash('⚠️ Campo vacío', 'err'); return; }
   if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'PEGAR_URL_AQUI') {
-    flash('⚠️ Configurá la URL del script', 'err'); return;
+    flash('⚠️ Configurá la URL del script primero', 'err'); return;
   }
-
-  input.value    = '';
-  input.disabled = true;
-
+  document.getElementById('bob-qr').value = '';
+  document.getElementById('bob-qr').disabled = true;
   try {
-    const res  = await fetch(window.APPS_SCRIPT_URL, {
+    var res  = await fetch(window.APPS_SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({ accion: 'escanear_bobina', codigo: code })
+      body: JSON.stringify({ accion: 'escanear_bobina', codigo: qrVal })
     });
-    const data = await res.json();
-
+    var data = await res.json();
     if (data.success) {
-      const emoji = data.nuevo_estado === 'En proceso' ? '▶️' : '✅';
-      flash(`${emoji} Bobina ${data.nuevo_estado}: ${code}`, 'ok');
-      addBobLog(code, data.nuevo_estado, true, data.message);
-      document.body.style.background = data.nuevo_estado === 'En proceso' ? '#FEF3C7' : '#dcfce7';
-      setTimeout(() => document.body.style.background = '', 400);
+      flash('✅ ' + data.message, 'ok');
+      addBobLog(qrVal, true, data.message);
+      document.body.style.background = '#dcfce7';
+      setTimeout(function() { document.body.style.background = ''; }, 380);
     } else {
-      flash(`❌ ${data.message}`, 'err');
-      addBobLog(code, '—', false, data.message);
+      flash('❌ ' + data.message, 'err');
+      addBobLog(qrVal, false, data.message);
     }
-  } catch {
+  } catch(err) {
     flash('🔌 Error de conexión', 'err');
-    addBobLog(code, '—', false, 'Error de red');
+    addBobLog(qrVal, false, 'Error de red');
   } finally {
-    input.disabled = false;
-    focusBobQR();
+    document.getElementById('bob-qr').disabled = false;
+    document.getElementById('bob-qr').focus();
   }
 });
 
-/* ── GENERADOR BOBINAS ── */
-document.getElementById('btn-bob-generar').addEventListener('click', async () => {
-  const medida = document.getElementById('bob-medida').value;
-  const peso   = parseFloat(document.getElementById('bob-peso').value);
-  const btn    = document.getElementById('btn-bob-generar');
-
-  if (!medida)           { flash('⚠️ Seleccioná la medida de la bobina', 'err'); return; }
-  if (!peso || peso <= 0){ flash('⚠️ Ingresá el peso de la bobina', 'err'); return; }
-  if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'PEGAR_URL_AQUI') {
-    flash('⚠️ Configurá la URL del script', 'err'); return;
-  }
-
-  btn.disabled    = true;
-  btn.textContent = '⏳ Generando...';
-
-  try {
-    const res  = await fetch(window.APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ accion: 'generar_bobina', medida, peso })
-    });
-    const data = await res.json();
-
-    if (data.success && data.codigo) {
-      flash(`✅ Bobina ingresada: ${data.codigo}`, 'ok');
-      renderBobBar(data.codigo, medida, peso);
-    } else {
-      flash(`❌ ${data.message || 'Error al generar'}`, 'err');
-    }
-  } catch {
-    flash('🔌 Error de conexión', 'err');
-  } finally {
-    btn.disabled    = false;
-    btn.textContent = '⚡ Generar Etiqueta';
-  }
-});
-
-function renderBobBar(codigo, medida, peso) {
-  // Guardar para impresión
-  window._printDataBobinas = [{ code: codigo, medida, peso }];
-
-  const container = document.getElementById('bob-bar-container');
-  container.innerHTML = '';
-
-  const item = document.createElement('div');
-  item.className = 'barcode-item';
-
-  const titulo = document.createElement('div');
-  titulo.className = 'bc-type';
-  titulo.textContent = 'BOBINA · BELTRAN S.A.';
-  titulo.style.fontWeight = '700';
-  titulo.style.color = 'var(--blue-dark)';
-
-  const svgEl = document.createElement('svg');
-  svgEl.id = 'bob-barcode-0';
-
-  const medidaLabel = document.createElement('div');
-  medidaLabel.className = 'bc-type';
-  medidaLabel.textContent = medida;
-
-  const pesoLabel = document.createElement('div');
-  pesoLabel.className = 'bc-code';
-  pesoLabel.textContent = `Peso: ${peso} kg`;
-
-  item.append(titulo, svgEl, medidaLabel, pesoLabel);
-  container.appendChild(item);
-
-  JsBarcode('#bob-barcode-0', codigo, {
-    format: 'CODE128', width: 2.4, height: 55,
-    displayValue: true, fontSize: 11, textMargin: 3,
-    margin: 4, lineColor: '#000000', background: '#ffffff'
-  });
-
-  document.getElementById('bob-bar-section').style.display = 'block';
-  document.getElementById('bob-bar-section').scrollIntoView({ behavior: 'smooth' });
-}
-
-/* ── RESUMEN BOBINAS ── */
-async function cargarResumenBobinas() {
+/* ══════════════════════════════════════════════════════════════
+   RESUMEN BOBINAS
+══════════════════════════════════════════════════════════════ */
+function cargarResumenBobinas() {
   if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'PEGAR_URL_AQUI') return;
-
   document.getElementById('bob-resumen-loading').style.display = 'block';
   document.getElementById('bob-resumen-tabla').style.display   = 'none';
   document.getElementById('bob-resumen-empty').style.display   = 'none';
   document.getElementById('bob-resumen-error').style.display   = 'none';
+  var btn = document.getElementById('btn-bob-refrescar');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Cargando...'; }
 
-  try {
-    const res  = await fetch(window.APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ accion: 'resumen_bobinas' })
-    });
-    const data = await res.json();
-
+  fetch(window.APPS_SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({ accion: 'resumen_bobinas' })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
     if (data.success && data.bobinas) {
-      const tbody = document.getElementById('bob-resumen-tbody');
-      if (!data.bobinas.length) {
-        document.getElementById('bob-resumen-empty').style.display = 'block';
-        return;
-      }
-      tbody.innerHTML = data.bobinas.map((b, i) => {
-        const estadoColor = b.estado === 'Disponible' ? '#F0FDF4' :
-                            b.estado === 'En proceso'  ? '#FEF3C7' : '#F4F6FB';
-        const estadoText  = b.estado === 'Disponible' ? '#166534' :
-                            b.estado === 'En proceso'  ? '#92400E' : '#374151';
-        const estadoEmoji = b.estado === 'Disponible' ? '🟢' :
-                            b.estado === 'En proceso'  ? '🟡' : '✅';
-        return `<tr style="background:${i%2===0?'white':'var(--g100)'}">
-          <td style="padding:9px 12px;border-bottom:1px solid var(--g200);font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--blue-dark);font-size:.95rem;">${b.codigo}</td>
-          <td style="padding:9px 12px;border-bottom:1px solid var(--g200);font-size:.85rem;">${b.medida}</td>
-          <td style="padding:9px 12px;border-bottom:1px solid var(--g200);text-align:center;font-weight:600;">${b.peso} kg</td>
-          <td style="padding:9px 12px;border-bottom:1px solid var(--g200);text-align:center;">
-            <span style="background:${estadoColor};color:${estadoText};padding:3px 10px;border-radius:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;">
-              ${estadoEmoji} ${b.estado}
-            </span>
-          </td>
-        </tr>`;
-      }).join('');
-      document.getElementById('bob-resumen-tabla').style.display = 'table';
+      renderResumenBobinas(data.bobinas);
     } else {
-      document.getElementById('bob-resumen-error').textContent = '❌ ' + (data.message || 'Error al cargar.');
+      document.getElementById('bob-resumen-error').textContent = '❌ ' + (data.message || 'Error');
       document.getElementById('bob-resumen-error').style.display = 'block';
     }
-  } catch {
-    document.getElementById('bob-resumen-error').textContent = '❌ Error de conexión.';
+  })
+  .catch(function() {
+    document.getElementById('bob-resumen-error').textContent = '❌ Error de conexión';
     document.getElementById('bob-resumen-error').style.display = 'block';
-  } finally {
+  })
+  .finally(function() {
     document.getElementById('bob-resumen-loading').style.display = 'none';
-  }
-}
-</script>
-
-
-<script>
-/* ══ SUB-TABS SIDERSA ══ */
-function sidTab(tab) {
-  ['generador','scanner','resumen'].forEach(t => {
-    const p = document.getElementById('sid-panel-' + t);
-    if (p) p.style.display = t === tab ? 'block' : 'none';
-    const btn = document.getElementById('sid-tab-' + t);
-    if (btn) {
-      btn.style.background = t === tab ? 'var(--blue)' : 'transparent';
-      btn.style.color = t === tab ? 'white' : 'var(--g700)';
-    }
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 Actualizar'; }
   });
-  if (tab === 'resumen') cargarStock();
-  if (tab === 'scanner') setTimeout(() => {
-    const el = document.getElementById('qr2');
-    if (el) { el.focus(); el.select(); }
-  }, 80);
 }
 
-/* ── ESCÁNER del sub-tab Sidersa ── */
-document.addEventListener('DOMContentLoaded', () => {
-  const qr2 = document.getElementById('qr2');
-  if (!qr2) return;
-  qr2.addEventListener('keypress', async e => {
-    if (e.key !== 'Enter') return;
-    e.preventDefault();
-
-    const code   = qr2.value.trim();
-    const obra   = (document.getElementById('obra2').value || '').trim();
-
-    if (!code) { flash('⚠️ El campo está vacío', 'err'); qr2.focus(); return; }
-    if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'PEGAR_URL_AQUI') {
-      flash('⚠️ Configurá la URL del script', 'err'); return;
-    }
-
-    qr2.value    = '';
-    qr2.disabled = true;
-
-    try {
-      const res  = await fetch(window.APPS_SCRIPT_URL, {
-        method: 'POST',
-        body: JSON.stringify({ accion: 'consumir', qr_code: code, numero_obra: obra || 'Sin asignar' })
-      });
-      const data = await res.json();
-
-      // Log en el scan-log2
-      const log2 = document.getElementById('scan-log2');
-      const entry = document.createElement('div');
-      entry.className = 'log-row';
-      entry.innerHTML = `
-        <span class="badge ${data.success ? 'b-ok' : 'b-err'}">${data.success ? '✓ OK' : '✗ ERR'}</span>
-        <span class="log-code">${code}</span>
-        <span class="log-detail">Obra: ${obra || '—'}</span>
-        <span class="log-time">${new Date().toLocaleTimeString('es-AR')}</span>`;
-      if (log2.querySelector('div[style]')) log2.innerHTML = '';
-      log2.insertBefore(entry, log2.firstChild);
-
-      if (data.success) {
-        flash('✅ Viga registrada: ' + code, 'ok');
-        document.body.style.background = '#dcfce7';
-        setTimeout(() => document.body.style.background = '', 350);
-      } else {
-        flash('❌ ' + data.message, 'err');
-      }
-    } catch {
-      flash('🔌 Error de conexión', 'err');
-    } finally {
-      qr2.disabled = false;
-      qr2.focus();
-    }
-  });
-});
-
-/* ── GENERADOR del sub-tab Sidersa — mostrar etiquetas en barcode-container2 ── */
-// Observar cuando se generan etiquetas en el generador original y reflejarlas
-const _origRenderCodigoBarras = window.renderCodigoBarras;
-document.addEventListener('DOMContentLoaded', () => {
-  // Sincronizar btn-generar2 con resultado del generador original
-  const origContainer = document.getElementById('barcode-container');
-  if (origContainer) {
-    const obs = new MutationObserver(() => {
-      const container2 = document.getElementById('barcode-container2');
-      const section2   = document.getElementById('barcode-section2');
-      if (container2 && origContainer.children.length > 0) {
-        container2.innerHTML = origContainer.innerHTML;
-        if (section2) section2.style.display = 'block';
-      }
-    });
-    obs.observe(origContainer, { childList: true });
-  }
-});
-</script>
-
-
-<script>
-/* ══ IMPRESIÓN — usa datos globales, redibuja JsBarcode en ventana nueva ══ */
-function imprimirEtiquetas(tipo) {
-  let data = tipo === 'bobinas' ? window._printDataBobinas : window._printDataPerfiles;
-  if (!data || !data.length) {
-    flash('⚠️ Generá las etiquetas primero', 'err');
+function renderResumenBobinas(bobinas) {
+  if (!bobinas || bobinas.length === 0) {
+    document.getElementById('bob-resumen-empty').style.display = 'block';
     return;
   }
-
-  // Construir items HTML
-  const itemsHTML = data.map(d => {
-    if (tipo === 'bobinas') {
-      return `<div class="lbl">
-        <p class="lbl-title">BOBINA · BELTRAN S.A.</p>
-        <svg id="sv-${d.code}" style="display:block;width:74mm;"></svg>
-        <p class="lbl-sub">${d.medida}</p>
-        <p class="lbl-peso">Peso: ${d.peso} kg</p>
-      </div>`;
-    } else {
-      return `<div class="lbl">
-        <svg id="sv-${d.code}" style="display:block;width:74mm;"></svg>
-        <p class="lbl-sub">${d.tipo}</p>
-      </div>`;
-    }
-  }).join('');
-
-  // JsBarcode calls
-  const jsCalls = data.map(d =>
-    `JsBarcode(document.getElementById("sv-${d.code}"), "${d.code}", {format:"CODE128",width:2.2,height:48,displayValue:true,fontSize:10,textMargin:2,margin:2,lineColor:"#000000",background:"#ffffff"});`
-  ).join('
-    ');
-
-  const winHTML = `<!DOCTYPE html>
-<html><head>
-<meta charset="UTF-8">
-<title>Etiquetas Beltran</title>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
-<style>
-  @page { size: 80mm 45mm; margin: 0; }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:white; font-family: Arial, sans-serif; }
-  .lbl {
-    width:80mm; height:45mm;
-    display:flex; flex-direction:column;
-    align-items:center; justify-content:center;
-    padding:2mm 3mm;
-    page-break-after:always;
-    overflow:hidden;
-  }
-  .lbl-title { font-size:7pt; font-weight:bold; color:#001A55; margin-bottom:1mm; }
-  .lbl-sub   { font-size:6pt; color:#555; margin-top:1mm; text-align:center; }
-  .lbl-peso  { font-size:7pt; font-weight:bold; color:#222; margin-top:0.5mm; }
-</style>
-</head><body>
-${itemsHTML}
-<script>
-  window.onload = function() {
-    ${jsCalls}
-    setTimeout(function(){ window.print(); }, 500);
+  var estadoColor = {
+    'Disponible':  { bg: '#F0FDF4', txt: '#166534' },
+    'En proceso':  { bg: '#FEF3C7', txt: '#92400E' },
+    'Finalizada':  { bg: '#F1F5F9', txt: '#64748B' }
   };
-<\/script>
-</body></html>`;
-
-  const blob = new Blob([winHTML], { type: 'text/html' });
-  const url  = URL.createObjectURL(blob);
-  const win  = window.open(url, '_blank');
-  if (!win) {
-    flash('⚠️ El navegador bloqueó la ventana emergente. Permitila para imprimir.', 'err');
-  }
+  document.getElementById('bob-resumen-tbody').innerHTML = bobinas.map(function(b, i) {
+    var sc = estadoColor[b.estado] || { bg: '#F2F4F8', txt: '#555' };
+    return '<tr style="background:' + (i % 2 === 0 ? 'white' : '#F2F4F8') + ';">'
+      + '<td style="padding:8px 12px;border-bottom:1px solid #DDE2EE;font-family:\'Courier New\',monospace;font-size:.78rem;color:#001A55;">' + b.codigo + '</td>'
+      + '<td style="padding:8px 12px;border-bottom:1px solid #DDE2EE;text-align:center;font-weight:700;">' + (b.medida || '—') + '</td>'
+      + '<td style="padding:8px 12px;border-bottom:1px solid #DDE2EE;text-align:center;">' + (b.peso || '—') + '</td>'
+      + '<td style="padding:8px 12px;border-bottom:1px solid #DDE2EE;text-align:center;">'
+      + '<span style="background:' + sc.bg + ';color:' + sc.txt + ';padding:2px 8px;border-radius:12px;font-weight:700;font-size:.8rem;">' + b.estado + '</span>'
+      + '</td>'
+      + '</tr>';
+  }).join('');
+  document.getElementById('bob-resumen-tabla').style.display = 'table';
 }
 </script>
-
 </body>
 </html>
