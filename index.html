@@ -939,19 +939,24 @@ document.getElementById('btn-generar').addEventListener('click', async () => {
 });
 
 /* ═══════════════════════ RENDER CÓDIGOS DE BARRA ═══════════════════════ */
+// Almacén global de datos para impresión
+window._printDataPerfiles = [];
+window._printDataBobinas  = [];
+
 function renderBarcodes(codes, tipo) {
   const container = document.getElementById('barcode-container');
   container.innerHTML = '';
+
+  // Guardar para impresión
+  window._printDataPerfiles = codes.map(c => ({ code: c, tipo }));
 
   codes.forEach(code => {
     const item = document.createElement('div');
     item.className = 'barcode-item';
 
-    // SVG para el código de barras
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     item.appendChild(svg);
 
-    // Texto del código y tipo
     const lblCode = document.createElement('span');
     lblCode.className = 'bc-code';
     lblCode.textContent = code;
@@ -963,15 +968,10 @@ function renderBarcodes(codes, tipo) {
     item.append(lblCode, lblTipo);
     container.appendChild(item);
 
-    // Generar el código de barras Code128 en el SVG
     JsBarcode(svg, code, {
-      format: 'CODE128',
-      width: 2,
-      height: 60,
-      displayValue: false,
-      margin: 6,
-      lineColor: '#001A55',
-      background: '#ffffff'
+      format: 'CODE128', width: 2, height: 60,
+      displayValue: false, margin: 6,
+      lineColor: '#001A55', background: '#ffffff'
     });
   });
 
@@ -1191,6 +1191,9 @@ document.getElementById('btn-bob-generar').addEventListener('click', async () =>
 });
 
 function renderBobBar(codigo, medida, peso) {
+  // Guardar para impresión
+  window._printDataBobinas = [{ code: codigo, medida, peso }];
+
   const container = document.getElementById('bob-bar-container');
   container.innerHTML = '';
 
@@ -1377,96 +1380,74 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 <script>
-/* ══ IMPRESIÓN INTELIGENTE — ventana nueva ══ */
+/* ══ IMPRESIÓN — usa datos globales, redibuja JsBarcode en ventana nueva ══ */
 function imprimirEtiquetas(tipo) {
-  let codes = [];
-  let labelData = [];
-
-  if (tipo === 'bobinas') {
-    // Recolectar datos de las etiquetas de bobinas
-    const items = document.querySelectorAll('#bob-bar-container .barcode-item');
-    items.forEach(item => {
-      const svgs = item.querySelectorAll('svg');
-      const texts = item.querySelectorAll('text');
-      // Buscar el código del texto del SVG
-      let code = '';
-      svgs.forEach(svg => {
-        svg.querySelectorAll('text').forEach(t => {
-          if (t.textContent && t.textContent.startsWith('BOB')) code = t.textContent;
-        });
-      });
-      const tipo_label = item.querySelector('.bc-type') ? item.querySelector('.bc-type').textContent : '';
-      const peso_label = item.querySelector('.bc-code') ? item.querySelector('.bc-code').textContent : '';
-      if (code) labelData.push({ code, tipo_label, peso_label, isBobina: true });
-    });
-  } else {
-    // Recolectar datos de etiquetas de perfiles
-    const c2 = document.getElementById('barcode-container2');
-    const c1 = document.getElementById('barcode-container');
-    const source = (c2 && c2.children.length > 0) ? c2 : c1;
-    if (!source) { flash('⚠️ No hay etiquetas para imprimir', 'err'); return; }
-    source.querySelectorAll('.barcode-item').forEach(item => {
-      let code = '';
-      item.querySelectorAll('svg text').forEach(t => {
-        if (t.textContent && t.textContent.startsWith('BEL')) code = t.textContent;
-      });
-      const tipo_label = item.querySelector('.bc-type') ? item.querySelector('.bc-type').textContent : '';
-      if (code) labelData.push({ code, tipo_label, isBobina: false });
-    });
+  let data = tipo === 'bobinas' ? window._printDataBobinas : window._printDataPerfiles;
+  if (!data || !data.length) {
+    flash('⚠️ Generá las etiquetas primero', 'err');
+    return;
   }
 
-  if (!labelData.length) { flash('⚠️ No hay etiquetas para imprimir', 'err'); return; }
-
-  // Construir HTML de la ventana de impresión
-  const items_html = labelData.map(d => {
-    if (d.isBobina) {
-      return `<div class="label">
-        <div class="label-title">BOBINA · BELTRAN S.A.</div>
-        <svg id="bc-${d.code}"></svg>
-        <div class="label-sub">${d.tipo_label}</div>
-        <div class="label-peso">${d.peso_label}</div>
+  // Construir items HTML
+  const itemsHTML = data.map(d => {
+    if (tipo === 'bobinas') {
+      return `<div class="lbl">
+        <p class="lbl-title">BOBINA · BELTRAN S.A.</p>
+        <svg id="sv-${d.code}" style="display:block;width:74mm;"></svg>
+        <p class="lbl-sub">${d.medida}</p>
+        <p class="lbl-peso">Peso: ${d.peso} kg</p>
       </div>`;
     } else {
-      return `<div class="label">
-        <svg id="bc-${d.code}"></svg>
-        <div class="label-sub">${d.tipo_label}</div>
+      return `<div class="lbl">
+        <svg id="sv-${d.code}" style="display:block;width:74mm;"></svg>
+        <p class="lbl-sub">${d.tipo}</p>
       </div>`;
     }
   }).join('');
 
-  const win = window.open('', '_blank', 'width=400,height=300');
-  win.document.write(`<!DOCTYPE html>
+  // JsBarcode calls
+  const jsCalls = data.map(d =>
+    `JsBarcode(document.getElementById("sv-${d.code}"), "${d.code}", {format:"CODE128",width:2.2,height:48,displayValue:true,fontSize:10,textMargin:2,margin:2,lineColor:"#000000",background:"#ffffff"});`
+  ).join('
+    ');
+
+  const winHTML = `<!DOCTYPE html>
 <html><head>
-<title>Etiquetas Beltran S.A.</title>
+<meta charset="UTF-8">
+<title>Etiquetas Beltran</title>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
 <style>
   @page { size: 80mm 45mm; margin: 0; }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: white; }
-  .label {
-    width: 80mm; height: 45mm;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    padding: 2mm 3mm;
-    page-break-after: always;
-    overflow: hidden;
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:white; font-family: Arial, sans-serif; }
+  .lbl {
+    width:80mm; height:45mm;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    padding:2mm 3mm;
+    page-break-after:always;
+    overflow:hidden;
   }
-  .label-title { font-family: Arial, sans-serif; font-size: 8pt; font-weight: bold; color: #00297A; margin-bottom: 1mm; }
-  .label-sub { font-family: Arial, sans-serif; font-size: 6pt; color: #555; margin-top: 1mm; }
-  .label-peso { font-family: Arial, sans-serif; font-size: 7pt; font-weight: bold; color: #222; margin-top: 0.5mm; }
-  svg { display: block; width: 74mm; }
+  .lbl-title { font-size:7pt; font-weight:bold; color:#001A55; margin-bottom:1mm; }
+  .lbl-sub   { font-size:6pt; color:#555; margin-top:1mm; text-align:center; }
+  .lbl-peso  { font-size:7pt; font-weight:bold; color:#222; margin-top:0.5mm; }
 </style>
 </head><body>
-${items_html}
+${itemsHTML}
 <script>
-window.onload = function() {
-  ${labelData.map(d => `JsBarcode("#bc-${d.code}", "${d.code}", {format:"CODE128",width:2.4,height:50,displayValue:true,fontSize:11,textMargin:3,margin:2,lineColor:"#000",background:"#fff"});`).join('
-  ')}
-  setTimeout(function(){ window.print(); window.close(); }, 600);
-};
+  window.onload = function() {
+    ${jsCalls}
+    setTimeout(function(){ window.print(); }, 500);
+  };
 <\/script>
-</body></html>`);
-  win.document.close();
+</body></html>`;
+
+  const blob = new Blob([winHTML], { type: 'text/html' });
+  const url  = URL.createObjectURL(blob);
+  const win  = window.open(url, '_blank');
+  if (!win) {
+    flash('⚠️ El navegador bloqueó la ventana emergente. Permitila para imprimir.', 'err');
+  }
 }
 </script>
 
