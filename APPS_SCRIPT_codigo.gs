@@ -1,13 +1,18 @@
 // ═══════════════════════════════════════════════════════════════
 //  Beltran S.A. — Control de Stock (Códigos de Barras 1D)
-//  Google Apps Script
+//  Google Apps Script — Versión completa (Perfiles + Bobinas)
 //
 //  PARA ACTUALIZAR:
 //  Extensiones → Apps Script → pegá este código completo
 //  → Implementar → Administrar implementaciones → editar → Nueva versión → Implementar
+//
+//  Hojas necesarias en el Spreadsheet:
+//    - Stock_Real   (QR_Code | Tipo_Viga | Estado | Fecha_Ingreso)
+//    - Consumido    (ID_Movimiento | Fecha_Consumo | QR_Code | Tipo_Viga | Numero_Obra)
+//    - Bobinas      (Codigo | Medida | Peso_kg | Estado | Fecha_Ingreso | Fecha_Proceso | Fecha_Finalizada)
 // ═══════════════════════════════════════════════════════════════
 
-const SPREADSHEET_ID = 'PEGAR_ID_DE_TU_SPREADSHEET_AQUI';
+const SPREADSHEET_ID = '1xczrzJvQ8RCuGcQTwmE-Pl8OKnaBab3j_O0UwTITu1E';
 
 // ── Punto de entrada POST ─────────────────────────────────────
 function doPost(e) {
@@ -16,9 +21,12 @@ function doPost(e) {
     const accion = body.accion;
 
     let resultado;
-    if      (accion === 'generar')       resultado = generarStock(body);
-    else if (accion === 'consumir')      resultado = consumirViga(body);
-    else if (accion === 'stock_resumen') resultado = stockResumen();
+    if      (accion === 'generar')          resultado = generarStock(body);
+    else if (accion === 'consumir')         resultado = consumirViga(body);
+    else if (accion === 'stock_resumen')    resultado = stockResumen();
+    else if (accion === 'generar_bobina')   resultado = generarBobina(body);
+    else if (accion === 'escanear_bobina')  resultado = escanearBobina(body);
+    else if (accion === 'resumen_bobinas')  resultado = resumenBobinas();
     else throw new Error('Acción desconocida: ' + accion);
 
     return responder(resultado);
@@ -37,7 +45,9 @@ function responder(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// ── Generar Stock ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  PERFILES — Generar Stock
+// ═══════════════════════════════════════════════════════════════
 function generarStock(body) {
   const tipoViga = body.tipo_viga;
   const cantidad = parseInt(body.cantidad);
@@ -65,7 +75,7 @@ function generarStock(body) {
     let code;
     let intentos = 0;
     do {
-      code = generarCodigo();
+      code = generarCodigo('BEL');
       intentos++;
       if (intentos > 200) throw new Error('No se pudo generar código único. Intentá de nuevo.');
     } while (usados.has(code.toUpperCase().trim()));
@@ -83,7 +93,9 @@ function generarStock(body) {
   return { success: true, codes, message: cantidad + ' viga(s) ingresadas correctamente.' };
 }
 
-// ── Consumir Viga ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  PERFILES — Consumir Viga
+// ═══════════════════════════════════════════════════════════════
 function consumirViga(body) {
   const barCode = body.qr_code;
   const nroObra = body.numero_obra || 'Sin asignar';
@@ -137,18 +149,16 @@ function consumirViga(body) {
   };
 }
 
-// ── Stock Resumen ─────────────────────────────────────────────
-// Devuelve un array con disponibles/consumidos/total por tipo de perfil
+// ═══════════════════════════════════════════════════════════════
+//  PERFILES — Stock Resumen
+// ═══════════════════════════════════════════════════════════════
 function stockResumen() {
   const ss   = SpreadsheetApp.openById(SPREADSHEET_ID);
   const hoja = ss.getSheetByName('Stock_Real');
   if (!hoja) throw new Error('No se encontró la hoja "Stock_Real".');
 
   const datos = hoja.getDataRange().getValues();
-  // datos[0] = encabezados
-
-  // Acumular conteos por tipo
-  const mapa = {};  // { tipo: { disponibles, consumidos } }
+  const mapa = {};
 
   for (let i = 1; i < datos.length; i++) {
     const tipo   = String(datos[i][1] || '').trim();
@@ -161,7 +171,6 @@ function stockResumen() {
     else if (estado === 'Consumido') mapa[tipo].consumidos++;
   }
 
-  // Convertir a array ordenado por nombre de perfil
   const resumen = Object.keys(mapa)
     .sort()
     .map(tipo => ({
@@ -174,14 +183,154 @@ function stockResumen() {
   return { success: true, resumen };
 }
 
-// ── Helpers ───────────────────────────────────────────────────
-function generarCodigo() {
+// ═══════════════════════════════════════════════════════════════
+//  BOBINAS — Generar Bobina
+// ═══════════════════════════════════════════════════════════════
+function generarBobina(body) {
+  const medida = body.medida;
+  const peso   = parseFloat(body.peso);
+
+  if (!medida)         throw new Error('Falta la medida de la bobina.');
+  if (!peso || peso <= 0) throw new Error('Falta el peso de la bobina.');
+
+  const ss   = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let hoja   = ss.getSheetByName('Bobinas');
+
+  // Crear la hoja si no existe
+  if (!hoja) {
+    hoja = ss.insertSheet('Bobinas');
+    hoja.getRange(1, 1, 1, 7).setValues([[
+      'Codigo', 'Medida', 'Peso_kg', 'Estado', 'Fecha_Ingreso', 'Fecha_Proceso', 'Fecha_Finalizada'
+    ]]);
+    hoja.getRange('A:A').setNumberFormat('@');
+  }
+
+  hoja.getRange('A:A').setNumberFormat('@');
+
+  // Verificar unicidad
+  const datosExistentes = hoja.getDataRange().getValues();
+  const usados = new Set();
+  datosExistentes.forEach(fila => {
+    if (fila[0]) usados.add(String(fila[0]).toUpperCase().trim());
+  });
+
+  let codigo;
+  let intentos = 0;
+  do {
+    codigo = generarCodigo('BOB');
+    intentos++;
+    if (intentos > 200) throw new Error('No se pudo generar código único para bobina.');
+  } while (usados.has(codigo.toUpperCase().trim()));
+
+  const fecha = new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+  const nuevaFila = hoja.getLastRow() + 1;
+  hoja.getRange(nuevaFila, 1).setNumberFormat('@').setValue(codigo.trim());
+  hoja.getRange(nuevaFila, 2).setValue(medida);
+  hoja.getRange(nuevaFila, 3).setValue(peso);
+  hoja.getRange(nuevaFila, 4).setValue('Disponible');
+  hoja.getRange(nuevaFila, 5).setValue(fecha);
+  hoja.getRange(nuevaFila, 6).setValue('');
+  hoja.getRange(nuevaFila, 7).setValue('');
+
+  return {
+    success: true,
+    codigo:  codigo,
+    message: 'Bobina ' + codigo + ' ingresada correctamente.'
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  BOBINAS — Escanear Bobina (ciclo: Disponible → En proceso → Finalizada)
+// ═══════════════════════════════════════════════════════════════
+function escanearBobina(body) {
+  const codigoEscaneado = body.codigo;
+  if (!codigoEscaneado) throw new Error('Falta el código de bobina.');
+
+  const ss   = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const hoja = ss.getSheetByName('Bobinas');
+  if (!hoja) throw new Error('No existe la hoja "Bobinas". Generá una bobina primero.');
+
+  hoja.getRange('A:A').setNumberFormat('@');
+
+  const datos = hoja.getDataRange().getValues();
+  const buscar = String(codigoEscaneado).toUpperCase().trim();
+
+  let filaEncontrada = -1;
+  let estadoActual   = '';
+
+  for (let i = 1; i < datos.length; i++) {
+    if (String(datos[i][0]).toUpperCase().trim() === buscar) {
+      filaEncontrada = i + 1;
+      estadoActual   = datos[i][3];
+      break;
+    }
+  }
+
+  if (filaEncontrada === -1) {
+    return { success: false, message: 'Código de bobina no encontrado: ' + codigoEscaneado };
+  }
+
+  const fecha = new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+
+  if (estadoActual === 'Disponible') {
+    hoja.getRange(filaEncontrada, 4).setValue('En proceso');
+    hoja.getRange(filaEncontrada, 6).setValue(fecha);
+    return { success: true, message: 'Bobina ' + codigoEscaneado + ' → En proceso' };
+
+  } else if (estadoActual === 'En proceso') {
+    hoja.getRange(filaEncontrada, 4).setValue('Finalizada');
+    hoja.getRange(filaEncontrada, 7).setValue(fecha);
+    return { success: true, message: 'Bobina ' + codigoEscaneado + ' → Finalizada' };
+
+  } else if (estadoActual === 'Finalizada') {
+    return { success: false, message: 'La bobina ' + codigoEscaneado + ' ya está Finalizada.' };
+
+  } else {
+    return { success: false, message: 'Estado desconocido para la bobina: ' + estadoActual };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  BOBINAS — Resumen
+// ═══════════════════════════════════════════════════════════════
+function resumenBobinas() {
+  const ss   = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const hoja = ss.getSheetByName('Bobinas');
+
+  if (!hoja) return { success: true, bobinas: [] };
+
+  const datos = hoja.getDataRange().getValues();
+  const bobinas = [];
+
+  for (let i = 1; i < datos.length; i++) {
+    const codigo = String(datos[i][0] || '').trim();
+    if (!codigo) continue;
+    bobinas.push({
+      codigo:  codigo,
+      medida:  datos[i][1] || '',
+      peso:    datos[i][2] || '',
+      estado:  datos[i][3] || '',
+      fecha:   datos[i][4] || ''
+    });
+  }
+
+  // Orden: Disponible primero, luego En proceso, luego Finalizada
+  const orden = { 'Disponible': 0, 'En proceso': 1, 'Finalizada': 2 };
+  bobinas.sort((a, b) => (orden[a.estado] ?? 3) - (orden[b.estado] ?? 3));
+
+  return { success: true, bobinas };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Helpers
+// ═══════════════════════════════════════════════════════════════
+function generarCodigo(prefijo) {
   const d    = new Date();
   const aa   = String(d.getFullYear()).slice(2);
   const mm   = pad(d.getMonth() + 1);
   const dd   = pad(d.getDate());
   const rand = String(Math.floor(Math.random() * 9000) + 1000);
-  return 'BEL' + aa + mm + dd + rand;
+  return prefijo + aa + mm + dd + rand;
 }
 
 function generarIdMovimiento() {
