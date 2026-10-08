@@ -629,6 +629,44 @@ var _printPerfiles = [];   // [{code, tipo}]
 var _printBobina   = null; // {code, medida, peso}
 
 /* ══════════════════════════════════════════════════════════════
+   ID DE OPERACIÓN ÚNICO (idempotencia)
+   Genera un ID único por operación para que el servidor detecte
+   reintentos y no duplique registros en la hoja.
+══════════════════════════════════════════════════════════════ */
+function generarIdOp() {
+  var t    = Date.now().toString(36);
+  var rand = Math.random().toString(36).slice(2, 8);
+  return 'op_' + t + '_' + rand;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   POST CON TIMEOUT
+   Aumenta el timeout a 55s (Apps Script cold start puede tardar
+   hasta 30s). Si la respuesta llega OK, retorna {ok, data}.
+   Si el timeout se cumple o hay error de red, retorna
+   {ok: false, timeout: true} para mostrar el aviso correcto.
+══════════════════════════════════════════════════════════════ */
+async function postConTimeout(payload, timeoutMs) {
+  timeoutMs = timeoutMs || 55000;
+  var controller = new AbortController();
+  var timer = setTimeout(function() { controller.abort(); }, timeoutMs);
+  try {
+    var res  = await fetch(window.APPS_SCRIPT_URL, {
+      method: 'POST',
+      body:   JSON.stringify(payload),
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    var data = await res.json();
+    return { ok: true, data: data };
+  } catch(err) {
+    clearTimeout(timer);
+    var timedOut = (err.name === 'AbortError');
+    return { ok: false, timeout: timedOut };
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
    SPLASH
 ══════════════════════════════════════════════════════════════ */
 window.addEventListener('load', function() {
@@ -773,12 +811,10 @@ document.getElementById('qr').addEventListener('keypress', async function(e) {
   }
   document.getElementById('qr').value = '';
   document.getElementById('qr').disabled = true;
-  try {
-    var res  = await fetch(window.APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ accion: 'consumir', qr_code: qrVal, numero_obra: obra || 'Sin asignar' })
-    });
-    var data = await res.json();
+  var idOp   = generarIdOp();
+  var result = await postConTimeout({ accion: 'consumir', qr_code: qrVal, numero_obra: obra || 'Sin asignar', id_op: idOp });
+  if (result.ok) {
+    var data = result.data;
     if (data.success) {
       flash('✅ Viga registrada: ' + qrVal, 'ok');
       addSidLog(qrVal, obra, true, data.message);
@@ -788,13 +824,15 @@ document.getElementById('qr').addEventListener('keypress', async function(e) {
       flash('❌ ' + data.message, 'err');
       addSidLog(qrVal, obra, false, data.message);
     }
-  } catch(err) {
-    flash('🔌 Error de conexión', 'err');
-    addSidLog(qrVal, obra, false, 'Error de red');
-  } finally {
-    document.getElementById('qr').disabled = false;
-    focusQR();
+  } else if (result.timeout) {
+    flash('⚠️ Sin respuesta — verificá el Resumen antes de escanear de nuevo', 'err');
+    addSidLog(qrVal, obra, false, 'Sin respuesta (verificar Resumen)');
+  } else {
+    flash('🔌 Error de conexión — verificá el Resumen antes de escanear de nuevo', 'err');
+    addSidLog(qrVal, obra, false, 'Error de red (verificar Resumen)');
   }
+  document.getElementById('qr').disabled = false;
+  focusQR();
 });
 
 /* ══════════════════════════════════════════════════════════════
@@ -812,24 +850,23 @@ document.getElementById('btn-generar').addEventListener('click', async function(
   }
   btn.disabled = true;
   btn.textContent = '⏳ Generando...';
-  try {
-    var res  = await fetch(window.APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ accion: 'generar', tipo_viga: tipo, cantidad: cantidad })
-    });
-    var data = await res.json();
+  var idOp = generarIdOp();
+  var result = await postConTimeout({ accion: 'generar', tipo_viga: tipo, cantidad: cantidad, id_op: idOp });
+  if (result.ok) {
+    var data = result.data;
     if (data.success && data.codes) {
       flash('✅ ' + data.codes.length + ' viga(s) ingresadas al stock', 'ok');
       renderBarcodes(data.codes, tipo);
     } else {
       flash('❌ ' + (data.message || 'Error al generar'), 'err');
     }
-  } catch(err) {
-    flash('🔌 Error de conexión', 'err');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '⚡ Generar e Ingresar al Stock';
+  } else if (result.timeout) {
+    flash('⚠️ Sin respuesta del servidor — verificá el Resumen antes de reintentar', 'err');
+  } else {
+    flash('🔌 Error de conexión — verificá el Resumen antes de reintentar', 'err');
   }
+  btn.disabled = false;
+  btn.textContent = '⚡ Generar e Ingresar al Stock';
 });
 
 /* ══════════════════════════════════════════════════════════════
@@ -1040,24 +1077,23 @@ document.getElementById('btn-generar-bob').addEventListener('click', async funct
   }
   btn.disabled = true;
   btn.textContent = '⏳ Generando...';
-  try {
-    var res  = await fetch(window.APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ accion: 'generar_bobina', medida: medida, peso: peso })
-    });
-    var data = await res.json();
+  var idOp = generarIdOp();
+  var result = await postConTimeout({ accion: 'generar_bobina', medida: medida, peso: peso, id_op: idOp });
+  if (result.ok) {
+    var data = result.data;
     if (data.success && data.codigo) {
       flash('✅ Bobina ' + data.codigo + ' ingresada', 'ok');
       renderBobBarcode(data.codigo, medida, peso);
     } else {
       flash('❌ ' + (data.message || 'Error al generar bobina'), 'err');
     }
-  } catch(err) {
-    flash('🔌 Error de conexión', 'err');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '⚡ Generar e Ingresar Bobina';
+  } else if (result.timeout) {
+    flash('⚠️ Sin respuesta del servidor — verificá el Resumen antes de reintentar', 'err');
+  } else {
+    flash('🔌 Error de conexión — verificá el Resumen antes de reintentar', 'err');
   }
+  btn.disabled = false;
+  btn.textContent = '⚡ Generar e Ingresar Bobina';
 });
 
 /* ══════════════════════════════════════════════════════════════
@@ -1170,12 +1206,10 @@ document.getElementById('bob-qr').addEventListener('keypress', async function(e)
   }
   document.getElementById('bob-qr').value = '';
   document.getElementById('bob-qr').disabled = true;
-  try {
-    var res  = await fetch(window.APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ accion: 'escanear_bobina', codigo: qrVal })
-    });
-    var data = await res.json();
+  var idOp   = generarIdOp();
+  var result = await postConTimeout({ accion: 'escanear_bobina', codigo: qrVal, id_op: idOp });
+  if (result.ok) {
+    var data = result.data;
     if (data.success) {
       flash('✅ ' + data.message, 'ok');
       addBobLog(qrVal, true, data.message);
@@ -1185,13 +1219,15 @@ document.getElementById('bob-qr').addEventListener('keypress', async function(e)
       flash('❌ ' + data.message, 'err');
       addBobLog(qrVal, false, data.message);
     }
-  } catch(err) {
-    flash('🔌 Error de conexión', 'err');
-    addBobLog(qrVal, false, 'Error de red');
-  } finally {
-    document.getElementById('bob-qr').disabled = false;
-    document.getElementById('bob-qr').focus();
+  } else if (result.timeout) {
+    flash('⚠️ Sin respuesta — verificá el Resumen antes de escanear de nuevo', 'err');
+    addBobLog(qrVal, false, 'Sin respuesta (verificar Resumen)');
+  } else {
+    flash('🔌 Error de conexión — verificá el Resumen antes de escanear de nuevo', 'err');
+    addBobLog(qrVal, false, 'Error de red (verificar Resumen)');
   }
+  document.getElementById('bob-qr').disabled = false;
+  document.getElementById('bob-qr').focus();
 });
 
 /* ══════════════════════════════════════════════════════════════
