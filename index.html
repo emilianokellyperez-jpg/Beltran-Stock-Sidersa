@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Beltran S.A. — Control de Stock</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
@@ -552,7 +553,7 @@
           <div class="hero-icon">📡</div>
           <div>
             <h3>Escáner de Bobinas</h3>
-            <p>1° escaneo: En proceso · 2° escaneo: Finalizada. El cursor vuelve automáticamente.</p>
+            <p>Escaneá la etiqueta — la app detecta el estado y te guía.</p>
           </div>
         </div>
         <div class="card">
@@ -567,6 +568,41 @@
                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
           </div>
         </div>
+
+        <!-- Panel de acción: aparece cuando la bobina está "En proceso" -->
+        <div id="bob-accion-panel" class="card" style="display:none;border:2px solid #F59E0B;background:#FFFBEB;">
+          <p style="font-weight:700;font-size:.82rem;color:#92400E;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;">
+            ⚠️ Bobina en proceso — ¿Qué hacés?
+          </p>
+          <div id="bob-accion-info" style="font-size:.88rem;color:#78350F;margin-bottom:16px;"></div>
+
+          <!-- Opción Almacenar -->
+          <div style="border:1px solid #FCD34D;border-radius:8px;padding:14px;margin-bottom:12px;background:white;">
+            <p style="font-weight:700;color:#92400E;margin-bottom:10px;">📦 Guardar bobina (queda Stock)</p>
+            <div class="fg">
+              <label for="bob-peso-actual">Peso actual (kg)</label>
+              <input type="number" id="bob-peso-actual" placeholder="Ej: 450" min="0" step="0.1"
+                     style="max-width:160px;" />
+            </div>
+            <button class="btn btn-primary" onclick="confirmarAlmacenar()" style="margin-top:10px;background:#D97706;border-color:#D97706;">
+              📦 Guardar y dejar en stock
+            </button>
+          </div>
+
+          <!-- Opción Finalizar -->
+          <div style="border:1px solid #FCA5A5;border-radius:8px;padding:14px;background:white;">
+            <p style="font-weight:700;color:#991B1B;margin-bottom:10px;">✅ Bobina terminada</p>
+            <p style="font-size:.83rem;color:#6B7280;margin-bottom:10px;">Se registra como Finalizada con el último peso guardado.</p>
+            <button class="btn" onclick="confirmarFinalizar()" style="background:#DC2626;color:white;border:none;padding:9px 20px;border-radius:8px;font-weight:700;cursor:pointer;">
+              ✅ Finalizar bobina
+            </button>
+          </div>
+
+          <button onclick="cancelarAccion()" style="margin-top:14px;background:none;border:1px solid #9CA3AF;color:#6B7280;padding:7px 16px;border-radius:6px;cursor:pointer;font-size:.83rem;">
+            ✕ Cancelar
+          </button>
+        </div>
+
         <div class="card">
           <p style="font-weight:700;font-size:.8rem;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.05em;margin-bottom:11px;">
             📋 Últimos Registros
@@ -599,7 +635,9 @@
               <tr style="background:var(--blue-dark);color:white;">
                 <th style="padding:9px 12px;text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:.88rem;">CÓDIGO</th>
                 <th style="padding:9px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.88rem;">MEDIDA</th>
-                <th style="padding:9px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.88rem;">PESO (kg)</th>
+                <th style="padding:9px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.88rem;">PESO INICIAL</th>
+                <th style="padding:9px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.88rem;">PESO ACTUAL</th>
+                <th style="padding:9px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.88rem;">CONSUMIDO</th>
                 <th style="padding:9px 12px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.88rem;">ESTADO</th>
               </tr>
             </thead>
@@ -1196,6 +1234,8 @@ document.getElementById('btn-imprimir-bobina').addEventListener('click', functio
 /* ══════════════════════════════════════════════════════════════
    ESCÁNER BOBINAS
 ══════════════════════════════════════════════════════════════ */
+var _bobCodigoPendiente = null;  // código esperando acción del operario
+
 document.getElementById('bob-qr').addEventListener('keypress', async function(e) {
   if (e.key !== 'Enter') return;
   e.preventDefault();
@@ -1206,12 +1246,33 @@ document.getElementById('bob-qr').addEventListener('keypress', async function(e)
   }
   document.getElementById('bob-qr').value = '';
   document.getElementById('bob-qr').disabled = true;
+
   var idOp   = generarIdOp();
   var result = await postConTimeout({ accion: 'escanear_bobina', codigo: qrVal, id_op: idOp });
+
   if (result.ok) {
     var data = result.data;
+
+    // La bobina está En proceso → mostrar panel de acción
+    if (data.success && data.requiere_accion) {
+      _bobCodigoPendiente = qrVal;
+      document.getElementById('bob-accion-info').innerHTML =
+        '<b>Medida:</b> ' + (data.medida || '—') +
+        ' · <b>Peso inicial:</b> ' + (data.peso_inicial || '—') + ' kg' +
+        ' · <b>Peso guardado:</b> ' + (data.peso_actual || '—') + ' kg';
+      document.getElementById('bob-accion-panel').style.display = 'block';
+      document.getElementById('bob-peso-actual').value = '';
+      document.getElementById('bob-peso-actual').focus();
+      flash('📋 Bobina en proceso — elegí qué hacer', 'ok');
+      // NO rehabilitar el campo escáner aún
+      return;
+    }
+
     if (data.success) {
-      flash('✅ ' + data.message, 'ok');
+      var emoji = data.nuevo_estado === 'En proceso' ? '▶️' :
+                  data.nuevo_estado === 'Almacenada' ? '📦' :
+                  data.nuevo_estado === 'Finalizada' ? '✅' : '✅';
+      flash(emoji + ' ' + data.message, 'ok');
       addBobLog(qrVal, true, data.message);
       document.body.style.background = '#dcfce7';
       setTimeout(function() { document.body.style.background = ''; }, 380);
@@ -1229,6 +1290,75 @@ document.getElementById('bob-qr').addEventListener('keypress', async function(e)
   document.getElementById('bob-qr').disabled = false;
   document.getElementById('bob-qr').focus();
 });
+
+async function confirmarAlmacenar() {
+  var pesoVal = parseFloat(document.getElementById('bob-peso-actual').value);
+  if (!pesoVal || pesoVal <= 0) { flash('⚠️ Ingresá el peso actual', 'err'); return; }
+  if (!_bobCodigoPendiente) return;
+
+  var codigo = _bobCodigoPendiente;
+  ocultarPanelAccion();
+
+  var idOp = generarIdOp();
+  var result = await postConTimeout({
+    accion: 'escanear_bobina',
+    codigo: codigo,
+    accion_bobina: 'almacenar',
+    peso_actual: pesoVal,
+    id_op: idOp
+  });
+
+  if (result.ok && result.data.success) {
+    flash('📦 ' + result.data.message, 'ok');
+    addBobLog(codigo, true, result.data.message);
+    document.body.style.background = '#fef9c3';
+    setTimeout(function() { document.body.style.background = ''; }, 380);
+  } else {
+    var msg = (result.ok ? result.data.message : 'Error de conexión');
+    flash('❌ ' + msg, 'err');
+    addBobLog(codigo, false, msg);
+  }
+  document.getElementById('bob-qr').disabled = false;
+  document.getElementById('bob-qr').focus();
+}
+
+async function confirmarFinalizar() {
+  if (!_bobCodigoPendiente) return;
+  var codigo = _bobCodigoPendiente;
+  ocultarPanelAccion();
+
+  var idOp = generarIdOp();
+  var result = await postConTimeout({
+    accion: 'escanear_bobina',
+    codigo: codigo,
+    accion_bobina: 'finalizar',
+    id_op: idOp
+  });
+
+  if (result.ok && result.data.success) {
+    flash('✅ ' + result.data.message, 'ok');
+    addBobLog(codigo, true, result.data.message);
+    document.body.style.background = '#dcfce7';
+    setTimeout(function() { document.body.style.background = ''; }, 380);
+  } else {
+    var msg = (result.ok ? result.data.message : 'Error de conexión');
+    flash('❌ ' + msg, 'err');
+    addBobLog(codigo, false, msg);
+  }
+  document.getElementById('bob-qr').disabled = false;
+  document.getElementById('bob-qr').focus();
+}
+
+function cancelarAccion() {
+  ocultarPanelAccion();
+  document.getElementById('bob-qr').disabled = false;
+  document.getElementById('bob-qr').focus();
+}
+
+function ocultarPanelAccion() {
+  _bobCodigoPendiente = null;
+  document.getElementById('bob-accion-panel').style.display = 'none';
+}
 
 /* ══════════════════════════════════════════════════════════════
    RESUMEN BOBINAS
@@ -1273,14 +1403,19 @@ function renderResumenBobinas(bobinas) {
   var estadoColor = {
     'Disponible':  { bg: '#F0FDF4', txt: '#166534' },
     'En proceso':  { bg: '#FEF3C7', txt: '#92400E' },
+    'Almacenada':  { bg: '#EFF6FF', txt: '#1D4ED8' },
     'Finalizada':  { bg: '#F1F5F9', txt: '#64748B' }
   };
   document.getElementById('bob-resumen-tbody').innerHTML = bobinas.map(function(b, i) {
     var sc = estadoColor[b.estado] || { bg: '#F2F4F8', txt: '#555' };
+    var pesoActual   = b.peso_actual  ? Number(b.peso_actual).toFixed(1)  + ' kg' : '—';
+    var consumido    = b.consumido_kg ? Number(b.consumido_kg).toFixed(1) + ' kg' : '—';
     return '<tr style="background:' + (i % 2 === 0 ? 'white' : '#F2F4F8') + ';">'
       + '<td style="padding:8px 12px;border-bottom:1px solid #DDE2EE;font-family:\'Courier New\',monospace;font-size:.78rem;color:#001A55;">' + b.codigo + '</td>'
       + '<td style="padding:8px 12px;border-bottom:1px solid #DDE2EE;text-align:center;font-weight:700;">' + (b.medida || '—') + '</td>'
-      + '<td style="padding:8px 12px;border-bottom:1px solid #DDE2EE;text-align:center;">' + (b.peso || '—') + '</td>'
+      + '<td style="padding:8px 12px;border-bottom:1px solid #DDE2EE;text-align:center;">' + (b.peso ? b.peso + ' kg' : '—') + '</td>'
+      + '<td style="padding:8px 12px;border-bottom:1px solid #DDE2EE;text-align:center;">' + pesoActual + '</td>'
+      + '<td style="padding:8px 12px;border-bottom:1px solid #DDE2EE;text-align:center;color:#DC2626;font-weight:600;">' + consumido + '</td>'
       + '<td style="padding:8px 12px;border-bottom:1px solid #DDE2EE;text-align:center;">'
       + '<span style="background:' + sc.bg + ';color:' + sc.txt + ';padding:2px 8px;border-radius:12px;font-weight:700;font-size:.8rem;">' + b.estado + '</span>'
       + '</td>'
